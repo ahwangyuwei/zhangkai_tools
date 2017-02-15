@@ -23,7 +23,6 @@ function install_env(){
     source ~/.bashrc
 }
 
-
 function install_sqlite(){
     wget http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
     tar xzf sqlite-autoconf-3160200.tar.gz && cd sqlite-autoconf-3160200
@@ -42,6 +41,12 @@ function install_openssl(){
     ./config --prefix=$optpath shared zlib-dynamic enable-camellia && make depend && make -j10 && make install
 }
 
+function install_curl(){
+    wget https://curl.haxx.se/download/curl-7.52.1.tar.gz --no-check-certificate
+    tar xzf curl-7.52.1.tar.gz && cd curl-7.52.1
+    ./configure --prefix=$optpath --disable-shared --enable-static --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6 && make -j10 && make install
+}
+
 function install_python(){
     wget https://www.python.org/ftp/python/2.7.12/Python-2.7.12.tgz
     tar xf Python-2.7.12.tgz && cd Python-2.7.12
@@ -49,8 +54,7 @@ function install_python(){
 }
 
 function install_snappy(){
-    wget https://github.com/google/snappy/zipball/master
-    unzip master && cd google-snappy-32d6d7d
+    git clone --depth=1 https://github.com/google/snappy.git && cd snappy
     ./autogen.sh && ./configure --prefix=$optpath && make -j10 && make install
 }
 
@@ -86,7 +90,7 @@ function install_mongodb(){
     wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.1.tgz
     tar xzf mongodb-linux-x86_64-amazon-3.4.1.tgz
     mv mongodb-linux-x86_64-amazon-3.4.1/bin/*  $optpath/bin
-    mkdir -p $basepath/runtime/mongodb/data && mkdir -p $basepath/runtime/mongodb/logs 
+    mkdir -p $basepath/runtime/mongodb/data && mkdir -p $basepath/runtime/mongodb/logs
     cp $basepath/conf/mongod.conf $basepath/runtime/mongodb/
     cd $basepath/runtime/mongodb
     $optpath/bin/mongod -f $basepath/runtime/mongodb/mongod.conf
@@ -104,7 +108,7 @@ function install_gcc(){
     ./contrib/download_prerequisites
     mkdir gcc-build && cd gcc-build
     ../configure --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
-    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/ 
+    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
     sudo rm /usr/lib64/libstdc++.so.6
     sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
     sudo ldconfig
@@ -139,7 +143,6 @@ function deploy_upload(){
     nohup python $basepath/script/upload.py -port=7001 -log_file_prefix=logs/upload.log &>/dev/null &
 }
 
-
 function show_info(){
     ip=`/sbin/ifconfig | grep "inet addr" | awk -F ':' '{print $2}' | awk '{print $1}' | grep -v '127.0.0.1'`
     echo "download path: $basepath/download"
@@ -148,19 +151,21 @@ function show_info(){
     echo "upload command: curl --socks5 52.34.197.81:9090 -F 'file=@filename' http://$ip:7001"
 }
 
-
 function init(){
     install_env
-    modules="sqlite snappy zlib openssl python pcre nginx ncurses vim"
+    modules="sqlite curl snappy zlib openssl python pcre nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
         install_$module
+        cd $basepath/script
         if [ $? -eq 0 ]; then
-    	    echo "$module install successful" >> install.log
+    	    echo "$module install succeed" >> install.log
+        else
+            echo "$module install failed" >> install.log
         fi
     done
-    
+
     install_pkg
     deploy_download
     deploy_upload
