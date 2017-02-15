@@ -94,8 +94,8 @@ function install_mongodb(){
     cp $basepath/conf/mongod.conf $basepath/runtime/mongodb/
     cd $basepath/runtime/mongodb
     $optpath/bin/mongod -f $basepath/runtime/mongodb/mongod.conf
-
     return 0
+
     sudo su
     echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
     echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
@@ -107,7 +107,9 @@ function install_gcc(){
     tar xzf gcc-5.3.0.tar.gz && cd gcc-5.3.0
     ./contrib/download_prerequisites
     mkdir gcc-build && cd gcc-build
-    ../configure --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
+    ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
+    return 0
+
     sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
     sudo rm /usr/lib64/libstdc++.so.6
     sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
@@ -152,6 +154,8 @@ function show_info(){
 }
 
 function init(){
+    install_gcc
+    # gcc 安装时LIBRARY_PATH不能包含安装目录
     install_env
     modules="sqlite curl snappy zlib openssl python pcre nginx ncurses vim"
     for module in $modules
