@@ -12,9 +12,9 @@ function install_env(){
     echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> ~/.bashrc
     echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
     # 动态链接库路径
-    echo "export LD_LIBRARY_PATH=$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
+    echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
     # 静态链接库路径
-    echo "export LIBRARY_PATH=$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
+    echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
     # gcc 头文件路径
     echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
     # g++ 头文件路径
@@ -38,14 +38,14 @@ function install_zlib(){
 function install_openssl(){
     wget http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz
     tar xzf openssl-1.0.2j.tar.gz && cd openssl-1.0.2j
-    ./config --prefix=$optpath shared zlib-dynamic enable-camellia  -fPIC && make depend && make -j10 && make install
+    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC && make depend && make -j10 && make install
 }
 
 function install_curl(){
     wget https://curl.haxx.se/download/curl-7.52.1.tar.gz --no-check-certificate
     tar xzf curl-7.52.1.tar.gz && cd curl-7.52.1
     #./configure --prefix=$optpath --disable-shared --enable-static --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6 && make -j10 && make install
-    ./configure --prefix=$optpath && make -j10 && make install
+    ./buildconf && ./configure --prefix=$optpath --with-openssl=$optpath/ssl && make -j10 && make install
 }
 
 function install_python(){
@@ -76,10 +76,8 @@ function install_nginx(){
    #./configure --prefix=$optpath --without-http_rewrite_module && make -j10 && make install
     wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.zip
     unzip pcre-8.39.zip
-    wget http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz
-    tar xzf openssl-1.0.2j.tar.gz
-    pwd=$(cd `dirname $0`; pwd)
-   ./configure --prefix=$optpath --with-pcre=$pwd/pcre-8.39 --with-openssl=$pwd/openssl-1.0.2j && make -j10 && make install
+	pwd=$(cd `dirname $0`/..; pwd)
+   ./configure --prefix=$optpath --with-pcre=$pwd/pcre-8.39 && make -j10 && make install
 }
 
 function install_redis(){
@@ -109,6 +107,7 @@ function install_mongodb(){
 }
 
 function install_gcc(){
+    cd $basepath/tmp
     wget http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz
     tar xzf gcc-5.3.0.tar.gz && cd gcc-5.3.0
     ./contrib/download_prerequisites
@@ -160,19 +159,18 @@ function show_info(){
 }
 
 function init(){
-    install_gcc
     # gcc 安装时LIBRARY_PATH不能包含安装目录
+    # install_gcc
     install_env
-    modules="sqlite curl snappy zlib openssl python nginx ncurses vim"
+    modules="sqlite snappy zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
         install_$module
-        cd $basepath/script
         if [ $? -eq 0 ]; then
-    	    echo "$module install succeed" >> install.log
+    	    echo "$module install succeed" >> $basepath/script/result.log
         else
-            echo "$module install failed" >> install.log
+            echo "$module install failed" >> $basepath/script/result.log
         fi
     done
 
