@@ -180,7 +180,7 @@ function init(){
     # gcc 安装时LIBRARY_PATH不能包含安装目录
     # install_gcc
     install_env
-    mkdir -p logs
+    mkdir -p $basepath/script/logs
     modules="sqlite snappy zlib openssl python nginx ncurses vim"
     for module in $modules
     do
