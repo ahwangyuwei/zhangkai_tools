@@ -39,7 +39,7 @@ function install_zlib(){
 function install_openssl(){
     wget http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz
     tar xzf openssl-1.0.2j.tar.gz && cd openssl-1.0.2j
-    ./config --prefix=$optpath shared zlib-dynamic enable-camellia && make depend && make -j10 && make install
+    ./config --prefix=$optpath shared zlib-dynamic enable-camellia  -fPIC && make depend && make -j10 && make install
 }
 
 function install_python(){
@@ -69,7 +69,12 @@ function install_nginx(){
     wget http://nginx.org/download/nginx-1.11.8.tar.gz
     tar -xzf nginx-1.11.8.tar.gz && cd nginx-1.11.8
    #./configure --prefix=$optpath --without-http_rewrite_module && make -j10 && make install
-   ./configure --prefix=$optpath  && make -j10 && make install
+    wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.zip
+    unzip pcre-8.39.zip
+    wget http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz
+    tar xzf openssl-1.0.2j.tar.gz
+    pwd=$(cd `dirname $0`; pwd)
+   ./configure --prefix=$optpath --with-pcre=$pwd/pcre-8.39 --with-openssl=$pwd/openssl-1.0.2j && make -j10 && make install
 }
 
 function install_redis(){
@@ -151,7 +156,7 @@ function show_info(){
 
 function init(){
     install_env
-    modules="sqlite snappy zlib openssl python pcre nginx ncurses vim"
+    modules="sqlite snappy zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
