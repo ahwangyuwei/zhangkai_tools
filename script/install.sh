@@ -41,6 +41,12 @@ function install_automake(){
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
+function install_libtool(){
+    wget http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
+    tar xf libtool-2.4.6.tar.gz && cd libtool-2.4.6
+    ./configure --prefix=$optpath && make -j10 && make install
+}
+
 function install_sqlite(){
     wget http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
     tar xzf sqlite-autoconf-3160200.tar.gz && cd sqlite-autoconf-3160200
@@ -79,7 +85,7 @@ function install_snappy(){
 
 function install_package(){
     pip install --upgrade pip
-    pip install requests tornado pycurl html5lib beautifulsoup4 lxml ipython kafka python-snappy
+    pip install requests tornado html5lib beautifulsoup4 lxml ipython kafka python-snappy pycurl
 }
 
 function install_pcre(){
@@ -94,8 +100,7 @@ function install_nginx(){
    #./configure --prefix=$optpath --without-http_rewrite_module && make -j10 && make install
     wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.zip
     unzip pcre-8.39.zip
-	pwd=$(cd `dirname $0`/..; pwd)
-   ./configure --prefix=$optpath --with-pcre=$pwd/pcre-8.39 && make -j10 && make install
+   ./configure --prefix=$optpath --with-pcre=$basepath/tmp/nginx-1.11.8/pcre-8.39 && make -j10 && make install
 }
 
 function install_redis(){
@@ -181,7 +186,7 @@ function init(){
     # install_gcc
     install_env
     mkdir -p $basepath/script/logs
-    modules="m4 autoconf automake sqlite snappy zlib openssl python nginx ncurses vim"
+    modules="sqlite zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
