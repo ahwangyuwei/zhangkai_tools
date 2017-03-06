@@ -23,6 +23,24 @@ function install_env(){
     source ~/.bashrc
 }
 
+function install_m4(){
+    wget http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz
+    tar xf m4-latest.tar.gz && cd m4-lastest
+    ./configure --prefix=$optpath && make -j10 && make install
+}
+
+function install_autoconf(){
+    wget ftp://alpha.gnu.org/pub/gnu/autoconf/autoconf-2.68b.tar.xz
+    tar xf autoconf-2.68b.tar.xz && cd autoconf-2.68b
+    ./configure --prefix=$optpath && make -j10 && make install
+}
+
+function install_automake(){
+    wget http://ftp.gnu.org/gnu/automake/automake-1.15.tar.xz
+    tar xf automake-1.15.tar.xz && cd automake-1.15
+    ./configure --prefix=$optpath && make -j10 && make install
+}
+
 function install_sqlite(){
     wget http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
     tar xzf sqlite-autoconf-3160200.tar.gz && cd sqlite-autoconf-3160200
@@ -30,9 +48,9 @@ function install_sqlite(){
 }
 
 function install_zlib(){
-    wget http://zlib.net/zlib-1.2.10.tar.gz
-    tar xzf zlib-1.2.10.tar.gz && cd zlib-1.2.10
-    ./configure --prefix=$optpath && make -j10 && make install
+    wget http://zlib.net/zlib-1.2.11.tar.gz
+    tar xzf zlib-1.2.11.tar.gz && cd zlib-1.2.11
+    ./configure --prefix=$optpath && make -j11 && make install
 }
 
 function install_openssl(){
@@ -59,7 +77,7 @@ function install_snappy(){
     ./autogen.sh && ./configure --prefix=$optpath && make -j10 && make install
 }
 
-function install_pkg(){
+function install_package(){
     pip install --upgrade pip
     pip install requests tornado pycurl html5lib beautifulsoup4 lxml ipython kafka python-snappy
 }
@@ -162,11 +180,12 @@ function init(){
     # gcc 安装时LIBRARY_PATH不能包含安装目录
     # install_gcc
     install_env
+    mkdir -p logs
     modules="sqlite snappy zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
-        install_$module
+        install_$module &> $basepath/script/logs/${module}.log
         if [ $? -eq 0 ]; then
     	    echo "$module install succeed" >> $basepath/script/result.log
         else
@@ -174,7 +193,7 @@ function init(){
         fi
     done
 
-    install_pkg
+    install_package
     deploy_download
     deploy_upload
     show_info
