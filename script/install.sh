@@ -181,7 +181,7 @@ function init(){
     # install_gcc
     install_env
     mkdir -p $basepath/script/logs
-    modules="sqlite snappy zlib openssl python nginx ncurses vim"
+    modules="m4 autoconf automake sqlite snappy zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
