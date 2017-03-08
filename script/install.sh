@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding:utf-8 -*-
 
-#set -x
+set -x
 basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
 mkdir -p opt tmp
@@ -9,17 +9,19 @@ optpath=$(cd opt; pwd)
 
 # 修改环境变量
 function install_env(){
-    echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> ~/.bashrc
-    echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
-    # 动态链接库路径
-    echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
-    # 静态链接库路径
-    echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
-    # gcc 头文件路径
-    echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
-    # g++ 头文件路径
-    echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> ~/.bashrc
-    echo "export LC_ALL=C" >> ~/.bashrc
+    if ! `grep C_INCLUDE_PATH ~/.bashrc`; then
+        echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> ~/.bashrc
+        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
+        # 动态链接库路径
+        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
+        # 静态链接库路径
+        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
+        # gcc 头文件路径
+        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
+        # g++ 头文件路径
+        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> ~/.bashrc
+        echo "export LC_ALL=C" >> ~/.bashrc
+    fi
     source ~/.bashrc
 }
 
@@ -121,27 +123,28 @@ function install_mongodb(){
     cp $basepath/conf/mongod.conf $basepath/runtime/mongodb/
     cd $basepath/runtime/mongodb
     $optpath/bin/mongod -f $basepath/runtime/mongodb/mongod.conf
-    return 0
 
-    sudo su
-    echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
-    echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
-    exit
+#    sudo su
+#    echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
+#    echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
+#    exit
 }
 
 function install_gcc(){
-    cd $basepath/tmp
+    export LD_LIBRARY_PATH=""
+    export LIBRARY_PATH=""
+    export C_INCLUDE_PATH=""
+    export CPLUS_INCLUDE_PATH=""
     wget http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz
     tar xzf gcc-5.3.0.tar.gz && cd gcc-5.3.0
     ./contrib/download_prerequisites
-    mkdir gcc-build && cd gcc-build
+    mkdir -p gcc-build && cd gcc-build
     ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
-    return 0
 
-    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
-    sudo rm /usr/lib64/libstdc++.so.6
-    sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
-    sudo ldconfig
+#    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
+#    sudo rm /usr/lib64/libstdc++.so.6
+#    sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
+#    sudo ldconfig
 }
 
 function install_ncurses(){
@@ -182,26 +185,33 @@ function show_info(){
 }
 
 function init(){
-    # gcc 安装时LIBRARY_PATH不能包含安装目录
-    # install_gcc
     install_env
     mkdir -p $basepath/script/logs
-    modules="sqlite zlib openssl python nginx ncurses vim"
+    modules="gcc sqlite zlib openssl python nginx ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
         install_$module &> $basepath/script/logs/${module}.log
         if [ $? -eq 0 ]; then
+            if [ "$module" == "python" ]; then
+                if `grep "Successfully installed pip" $basepath/script/logs/${module}.log` ; then
+                    install_package
+                    echo "pip install succeed" >> $basepath/script/result.log
+                else
+                    echo "pip install failed" >> $basepath/script/result.log
+                fi
+            fi
+            if [ "$module" == "nginx" ]; then
+                deploy_download
+                deploy_upload
+                show_info
+            fi
     	    echo "$module install succeed" >> $basepath/script/result.log
         else
             echo "$module install failed" >> $basepath/script/result.log
         fi
     done
 
-    install_package
-    deploy_download
-    deploy_upload
-    show_info
 }
 
 init
