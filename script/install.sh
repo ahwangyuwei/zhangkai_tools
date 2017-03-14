@@ -49,6 +49,12 @@ function install_libtool(){
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
+function install_jq(){
+    wget https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz -O jq-1.5.tar.gz
+    tar xf jq-1.5.tar.gz && cd jq-1.5
+    ./configure --prefix=/data2/zhangkai/tools/opt/ --disable-maintainer-mode && make -j10 && make install
+}
+
 function install_sqlite(){
     wget http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
     tar xzf sqlite-autoconf-3160200.tar.gz && cd sqlite-autoconf-3160200
@@ -171,23 +177,21 @@ function deploy_download(){
 
 function deploy_upload(){
     mkdir -p $basepath/upload/logs
-    ps -ef | grep $USER | grep -v grep | grep upload.py | grep 7001 | awk '{print $2}' | xargs kill -9
+    ps -ef | grep $USER | grep -v grep | grep upload.py | grep 7000 | awk '{print $2}' | xargs kill -9
     cd $basepath/upload
-    nohup python $basepath/script/upload.py -port=7001 -log_file_prefix=logs/upload.log &>/dev/null &
+    nohup python $basepath/script/upload.py -port=7000 -log_file_prefix=logs/upload.log &>/dev/null &
 }
 
 function show_info(){
     ip=`/sbin/ifconfig | grep "inet addr" | awk -F ':' '{print $2}' | awk '{print $1}' | grep -v '127.0.0.1'`
-    echo "download path: $basepath/download"
-    echo "download link: http://$ip:7000"
     echo "upload path: $basepath/upload"
-    echo "upload command: curl --socks5 52.34.197.81:9090 -F 'file=@filename' http://$ip:7001"
+    echo "upload command: curl --socks5 52.34.197.81:9090 -H 'file=filename'--data-binary @filename http://$ip:7000"
 }
 
 function init(){
     install_env
     mkdir -p $basepath/script/logs
-    modules="gcc sqlite zlib openssl python nginx ncurses vim"
+    modules="m4 autoconf automake jq sqlite zlib openssl python ncurses vim"
     for module in $modules
     do
         cd $basepath/tmp
@@ -202,7 +206,6 @@ function init(){
                 fi
             fi
             if [ "$module" == "nginx" ]; then
-                deploy_download
                 deploy_upload
                 show_info
             fi

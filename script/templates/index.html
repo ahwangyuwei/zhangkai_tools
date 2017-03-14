@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh_CN">
+	<head>
+		<link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<title>文件下载</title>
+	</head>
+	<body>
+		<div class="container" style="margin-top:50px">
+			<ul class="list-group">
+                {% for key, value in file_dict.items() %}
+                <li class="list-group-item">
+                    <a href="/static/{{ key }}">{{ key }}</a>
+                    <span class="badge">{{ value }}</span>
+				</li>
+                {% end %}
+			</ul>
+		</div> 
+	</body>
+</html>
