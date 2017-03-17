@@ -199,30 +199,31 @@ function show_info(){
 function init(){
     install_env
     mkdir -p $basepath/script/logs
-    modules="m4 autoconf automake jq sqlite zlib openssl python ncurses vim"
+    if [ $# -eq 0 ]; then
+        modules="m4 autoconf automake jq sqlite zlib openssl python ncurses vim"
+    else
+        modules=$@
+    fi
     for module in $modules
     do
         cd $basepath/tmp
         install_$module &> $basepath/script/logs/${module}.log
         if [ $? -eq 0 ]; then
             if [ "$module" == "python" ]; then
-                if `grep "Successfully installed pip" $basepath/script/logs/${module}.log` ; then
+                if `grep "Successfully installed pip" $basepath/script/logs/${module}.log &>/dev/null` ; then
                     install_package
+                    deploy_upload
+                    show_info
                     echo "pip install succeed" >> $basepath/script/result.log
                 else
                     echo "pip install failed" >> $basepath/script/result.log
                 fi
-            fi
-            if [ "$module" == "nginx" ]; then
-                deploy_upload
-                show_info
             fi
     	    echo "$module install succeed" >> $basepath/script/result.log
         else
             echo "$module install failed" >> $basepath/script/result.log
         fi
     done
-
 }
 
-init
+init $@
