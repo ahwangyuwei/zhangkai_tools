@@ -9,80 +9,88 @@ optpath=$(cd opt; pwd)
 
 # 修改环境变量
 function install_env(){
-    if ! `grep C_INCLUDE_PATH ~/.bashrc`; then
-        echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> ~/.bashrc
-        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
+    if ! `grep C_INCLUDE_PATH /home/$USER/.bashrc`; then
+        echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> /home/$USER/.bashrc
+        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> /home/$USER/.bashrc
         # 动态链接库路径
-        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
+        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> /home/$USER/.bashrc
         # 静态链接库路径
-        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
+        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> /home/$USER/.bashrc
         # gcc 头文件路径
-        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
+        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> /home/$USER/.bashrc
         # g++ 头文件路径
-        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> ~/.bashrc
-        echo "export LC_ALL=C" >> ~/.bashrc
+        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> /home/$USER/.bashrc
+        echo "export LC_ALL=C" >> /home/$USER/.bashrc
     fi
-    source ~/.bashrc
+    source /home/$USER/.bashrc
+}
+
+function download(){
+    if ! `test -e $3`; then
+        wget $1 --no-check-certificate -O $2
+        tar xf $2
+    fi
+    cd $3
 }
 
 function install_m4(){
-    wget http://ftp.gnu.org/gnu/m4/m4-latest.tar.gz
-    tar xf m4-latest.tar.gz && cd m4-lastest
+    url="http://ftp.gnu.org/gnu/m4/m4-1.4.7.tar.gz"
+    download $url m4-1.4.7.tar.gz m4-1.4.7
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
 function install_autoconf(){
-    wget ftp://alpha.gnu.org/pub/gnu/autoconf/autoconf-2.68b.tar.xz
-    tar xf autoconf-2.68b.tar.xz && cd autoconf-2.68b
+    url="ftp://alpha.gnu.org/pub/gnu/autoconf/autoconf-2.68b.tar.xz"
+    download $url autoconf-2.68b.tar.xz autoconf-2.68b
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
 function install_automake(){
-    wget http://ftp.gnu.org/gnu/automake/automake-1.15.tar.xz
-    tar xf automake-1.15.tar.xz && cd automake-1.15
+    url="http://ftp.gnu.org/gnu/automake/automake-1.15.tar.xz"
+    download $url automake-1.15.tar.xz automake-1.15
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
 function install_libtool(){
-    wget http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
-    tar xf libtool-2.4.6.tar.gz && cd libtool-2.4.6
+    url="http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz"
+    download $url libtool-2.4.6.tar.gz libtool-2.4.6
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
 function install_jq(){
-    wget https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz -O jq-1.5.tar.gz
-    tar xf jq-1.5.tar.gz && cd jq-1.5
-    ./configure --prefix=/data2/zhangkai/tools/opt/ --disable-maintainer-mode && make -j10 && make install
+    url="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz"
+    download $url jq-1.5.tar.gz jq-1.5
+    ./configure --prefix=$optpath --disable-maintainer-mode && make -j10 && make install
 }
 
 function install_sqlite(){
-    wget http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz
-    tar xzf sqlite-autoconf-3160200.tar.gz && cd sqlite-autoconf-3160200
+    url="http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz"
+    download $url sqlite-autoconf-3160200.tar.gz sqlite-autoconf-3160200
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
 function install_zlib(){
-    wget http://zlib.net/zlib-1.2.11.tar.gz
-    tar xzf zlib-1.2.11.tar.gz && cd zlib-1.2.11
+    url="http://zlib.net/zlib-1.2.11.tar.gz"
+    download $url zlib-1.2.11.tar.gz zlib-1.2.11
     ./configure --prefix=$optpath && make -j11 && make install
 }
 
 function install_openssl(){
-    wget http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz
-    tar xzf openssl-1.0.2j.tar.gz && cd openssl-1.0.2j
+    url="http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz"
+    download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
     ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC && make depend && make -j10 && make install
 }
 
 function install_curl(){
-    wget https://curl.haxx.se/download/curl-7.52.1.tar.gz --no-check-certificate
-    tar xzf curl-7.52.1.tar.gz && cd curl-7.52.1
+    url="https://curl.haxx.se/download/curl-7.52.1.tar.gz"
+    download $url curl-7.52.1.tar.gz curl-7.52.1
     #./configure --prefix=$optpath --disable-shared --enable-static --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6 && make -j10 && make install
     ./buildconf && ./configure --prefix=$optpath --with-openssl=$optpath/ssl && make -j10 && make install
 }
 
 function install_python(){
-    wget https://www.python.org/ftp/python/2.7.12/Python-2.7.12.tgz
-    tar xf Python-2.7.12.tgz && cd Python-2.7.12
+    url="https://www.python.org/ftp/python/2.7.12/Python-2.7.12.tgz"
+    download $url Python-2.7.12.tgz Python-2.7.12
     ./configure --prefix=$optpath --with-ensurepip=install && make -j10 && make install
 }
 
@@ -97,23 +105,23 @@ function install_package(){
 }
 
 function install_pcre(){
-    wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.zip
-    unzip pcre-8.39.zip && cd pcre-8.39
+    url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2"
+    download $url pcre-8.40.tar.bz2 pcre-8.40
     ./configure --prefix=$optpath &&  make -j10 && make install
 }
 
 function install_nginx(){
-    wget http://nginx.org/download/nginx-1.11.8.tar.gz
-    tar -xzf nginx-1.11.8.tar.gz && cd nginx-1.11.8
+    url="http://nginx.org/download/nginx-1.11.8.tar.gz"
+    download $url nginx-1.11.8.tar.gz nginx-1.11.8
    #./configure --prefix=$optpath --without-http_rewrite_module && make -j10 && make install
-    wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.39.zip
-    unzip pcre-8.39.zip
-   ./configure --prefix=$optpath --with-pcre=$basepath/tmp/nginx-1.11.8/pcre-8.39 && make -j10 && make install
+    wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2
+    tar xf pcre-8.40.tar.bz2
+   ./configure --prefix=$optpath --with-pcre=$basepath/tmp/nginx-1.11.8/pcre-8.40 && make -j10 && make install
 }
 
 function install_redis(){
-    wget http://download.redis.io/redis-stable.tar.gz
-    tar xzf redis-stable.tar.gz && cd redis-stable
+    url="http://download.redis.io/redis-stable.tar.gz"
+    download $url redis-stable.tar.gz redis-stable
     make -j10 && cp src/redis-server $optpath/bin && cp src/redis-cli $optpath/bin
     mkdir -p $basepath/runtime/redis
     cp redis.conf $basepath/runtime/redis && sed -i 's/daemonize no/daemonize yes/g' $basepath/runtime/redis/redis.conf
@@ -141,8 +149,8 @@ function install_gcc(){
     export LIBRARY_PATH=""
     export C_INCLUDE_PATH=""
     export CPLUS_INCLUDE_PATH=""
-    wget http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz
-    tar xzf gcc-5.3.0.tar.gz && cd gcc-5.3.0
+    url="http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz"
+    download $url gcc-5.3.0.tar.gz gcc-5.3.0
     ./contrib/download_prerequisites
     mkdir -p gcc-build && cd gcc-build
     ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
@@ -154,8 +162,8 @@ function install_gcc(){
 }
 
 function install_ncurses(){
-    wget http://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz
-    tar xzf ncurses-6.0.tar.gz && cd ncurses-6.0
+    url="http://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"
+    download $url ncurses-6.0.tar.gz  ncurses-6.0
     ./configure --prefix=$optpath && make -j10 && make install
 }
 
