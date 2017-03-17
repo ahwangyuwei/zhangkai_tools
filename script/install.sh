@@ -85,7 +85,7 @@ function install_curl(){
     url="https://curl.haxx.se/download/curl-7.52.1.tar.gz"
     download $url curl-7.52.1.tar.gz curl-7.52.1
     #./configure --prefix=$optpath --disable-shared --enable-static --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6 && make -j10 && make install
-    ./buildconf && ./configure --prefix=$optpath --with-openssl=$optpath/ssl && make -j10 && make install
+    ./buildconf && ./configure --prefix=$optpath --with-ssl=$optpath && make -j10 && make install
 }
 
 function install_python(){
@@ -101,7 +101,7 @@ function install_snappy(){
 
 function install_package(){
     pip install --upgrade pip
-    pip install requests tornado html5lib beautifulsoup4 lxml ipython kafka python-snappy pycurl
+    pip install requests tornado ipython
 }
 
 function install_pcre(){
