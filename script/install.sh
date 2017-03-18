@@ -20,6 +20,8 @@ function install_env(){
         echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> /home/$USER/.bashrc
         # g++ 头文件路径
         echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> /home/$USER/.bashrc
+        # pkgconfig 路径
+        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> /home/$USER/.bashrc
         echo "export LC_ALL=C" >> /home/$USER/.bashrc
     fi
     source /home/$USER/.bashrc
@@ -78,7 +80,9 @@ function install_zlib(){
 function install_openssl(){
     url="http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz"
     download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
-    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC && make depend && make -j10 && make install
+    echo "OPENSSL_1.0.0 { global: *; };" >> openssl.ld
+    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions --with-openssl=$optpath/openssl
+    make depend && make -j10 && make install
 }
 
 function install_curl(){
@@ -200,7 +204,7 @@ function init(){
     install_env
     mkdir -p $basepath/script/logs
     if [ $# -eq 0 ]; then
-        modules="m4 autoconf automake jq sqlite zlib openssl python ncurses vim"
+        modules="m4 autoconf automake jq sqlite zlib python ncurses vim"
     else
         modules=$@
     fi
