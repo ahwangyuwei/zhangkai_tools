@@ -204,7 +204,7 @@ function init(){
     install_env
     mkdir -p $basepath/script/logs
     if [ $# -eq 0 ]; then
-        modules="m4 autoconf automake jq sqlite zlib python ncurses vim"
+        modules="m4 autoconf automake jq sqlite curl zlib python ncurses vim"
     else
         modules=$@
     fi
