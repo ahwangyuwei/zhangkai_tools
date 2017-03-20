@@ -9,7 +9,7 @@ optpath=$(cd opt; pwd)
 
 # 修改环境变量
 function install_env(){
-    if ! `grep C_INCLUDE_PATH /home/$USER/.bashrc`; then
+    if ! `grep C_INCLUDE_PATH /home/$USER/.bashrc &>/dev/null`; then
         echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> /home/$USER/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> /home/$USER/.bashrc
         # 动态链接库路径
@@ -80,8 +80,7 @@ function install_zlib(){
 function install_openssl(){
     url="http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz"
     download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
-    echo "OPENSSL_1.0.0 { global: *; };" >> openssl.ld
-    echo "OPENSSL_1.0.1 { global: *; };" >> openssl.ld
+    echo "OPENSSL_1.0.0 { global: *; };" > openssl.ld
     ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions
     make depend && make -j10 && make install
 }
@@ -104,10 +103,6 @@ function install_snappy(){
     ./autogen.sh && ./configure --prefix=$optpath && make -j10 && make install
 }
 
-function install_package(){
-    pip install --upgrade pip
-    pip install requests tornado ipython
-}
 
 function install_pcre(){
     url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2"
@@ -216,7 +211,7 @@ function init(){
         if [ $? -eq 0 ]; then
             if [ "$module" == "python" ]; then
                 if `grep "Successfully installed pip" $basepath/script/logs/${module}.log &>/dev/null` ; then
-                    install_package
+                    pip install --upgrade -r requirements.txt
                     deploy_upload
                     show_info
                     echo "pip install succeed" >> $basepath/script/result.log
