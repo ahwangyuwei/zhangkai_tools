@@ -10,7 +10,7 @@ optpath=$(cd opt; pwd)
 # 修改环境变量
 function install_env(){
     if ! `grep C_INCLUDE_PATH /home/$USER/.bashrc &>/dev/null`; then
-        echo "export PYTHONPATH=\$PYTHONPATH:$basepath/script" >> /home/$USER/.bashrc
+        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> /home/$USER/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> /home/$USER/.bashrc
         # 动态链接库路径
         echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> /home/$USER/.bashrc
@@ -211,6 +211,11 @@ function init(){
         if [ $? -eq 0 ]; then
             if [ "$module" == "python" ]; then
                 if `grep "Successfully installed pip" $basepath/script/logs/${module}.log &>/dev/null` ; then
+                    if `nvidia-smi &>/dev/null`; then
+                        echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
+                    else
+                        echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
+                    fi
                     pip install --upgrade -r requirements.txt
                     deploy_upload
                     show_info
