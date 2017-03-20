@@ -82,7 +82,7 @@ function install_openssl(){
     download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
     echo "OPENSSL_1.0.0 { global: *; };" >> openssl.ld
     echo "OPENSSL_1.0.1 { global: *; };" >> openssl.ld
-    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions --with-openssl=$optpath/openssl
+    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions
     make depend && make -j10 && make install
 }
 
