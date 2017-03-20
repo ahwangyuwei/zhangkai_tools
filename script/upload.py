@@ -37,6 +37,7 @@ class StreamHandler(tornado.web.RequestHandler):
         if int(process) > self.process:
             self.process = int(process)
             self.write('uploading process %.2f%%\n' % process)
+            self.flush()
         self.fp.write(chunk)
 
     @tornado.web.asynchronous
@@ -47,6 +48,7 @@ class StreamHandler(tornado.web.RequestHandler):
 
 class UploadHandler(tornado.web.RequestHandler):
 
+    @tornado.web.asynchronous
     def post(self):
         ip = self.request.headers['X-Real-Ip'].split(",")[0] if 'X-Real-Ip' in self.request.headers else self.request.remote_ip
         if self.request.files:
@@ -55,19 +57,18 @@ class UploadHandler(tornado.web.RequestHandler):
                     logging.info("received file: %s", item['filename'])
                     with open(os.path.basename(item['filename']), 'wb') as fp:
                         fp.write(item['body'])
-            self.finish('succeed')
+            self.finish('succeed\n')
         else:
-            self.finish('filename not found')
+            self.finish('filename not found\n')
 
     def execute(self):
         command = self.request.headers.get('command', None)
         if command:
             logging.info(cmd)
             code, output = commands.getstatusoutput(cmd)
-            logging.info("command execute code: %s, output: %s", code, output)
-            self.finish('command execute result: %s' % output)
+            self.finish('command execute result: %s: %s' % (code, output))
         else:
-            self.finish('succeed')
+            self.finish('succeed\n')
 
 
 class HomeHandler(tornado.web.RequestHandler):

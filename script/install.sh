@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding:utf-8 -*-
 
-set -x
+#set -x
 basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
 mkdir -p opt tmp
@@ -31,11 +31,13 @@ function install_env(){
 }
 
 function download(){
-    # 默认filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
+    # filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
     url=$1
     filename=`basename $url`
     name=${filename%.*}
-    name=${name%.*}
+    if [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz) ]]; then
+        name=${name%.*}
+    fi
     decompress="tar xf"
     shift 1
     while getopts ":f:n:d:" opt
@@ -44,15 +46,15 @@ function download(){
             f) filename=$OPTARG;;
             n) name=$OPTARG;;
             d) decompress=$OPTARG;;
-            ?) echo "params not defined";;
+            ?) echo "error";;
         esac
     done
     if ! `test -e $name`; then
-        if [ "$url" =~ "https?:" ]; then
+        if [[ "$url" =~ ^(http|ftp) ]]; then
             wget $url --no-check-certificate -O $filename
             $decompress $filename
         else
-            $url
+            eval "$url"
         fi
     fi
     cd $name
@@ -123,7 +125,11 @@ function readini(){
     SECTION=$1
     KEY=$2
     CONFIG=$3
-    awk -F '=' '/\['"$SECTION"'\]/{a=1}a==1&&$1~/'"$KEY"'/{value=""; for(i=2;i<NF;i++){ value=value""$i"=" }; value=value""$NF; exit;}END{ gsub(/^ *| *$/, "", value); print value;}' $CONFIG
+    # sed 匹配[$SECION]到下一个[之间的所有行, egrep 去除所有包含[]和空行的, awk 打印
+    keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }'`
+    if [[ "$keys" =~ $KEY ]]; then
+        sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' -v match_key=$KEY '{ key=$1; $1=""; value=$0; gsub(/^ *| *$/, "", key); gsub(/^ *| *$/, "", value); if(key == match_key) print value}'
+	fi
 }
 
 function init(){
@@ -141,11 +147,16 @@ function init(){
         cd $basepath/tmp
         url=`readini $package url $config`
         command=`readini $package command $config`
-        download $url
-        $command  &> $basepath/script/logs/${package}.log
+		name=`readini $package name $config`
+        if [[ "$name" == "" ]]; then
+            download $url
+        else
+          download $url -n $name
+        fi
+        eval "$command"  &> $basepath/script/logs/${package}.log
 
-        if [ $? -eq 0 ]; then
-            if [ "$package" == "python" ]; then
+        if [[ $? -eq 0 ]]; then
+            if [[ "$package" == "python" ]]; then
                 if `grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null` ; then
                     if `nvidia-smi &>/dev/null`; then
                         echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
@@ -153,7 +164,7 @@ function init(){
                         echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
                     fi
                     pip install --upgrade -r $basepath/script/requirements.txt
-                    if [ $? -eq 0 ]; then
+                    if [[ $? -eq 0 ]]; then
                         deploy_upload
                         show_info
                     fi
