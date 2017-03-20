@@ -150,6 +150,9 @@ function init(){
         if [[ "$sections" =~ $package ]]; then
             url=`readini $package url $config`
             command=`readini $package command $config`
+            if [[ "$command" == "" ]]; then
+                command="./configure --prefix=$optpath && make -j10 && make install"
+            fi
             name=`readini $package name $config`
             if [[ "$name" == "" ]]; then
                 download "$url"
