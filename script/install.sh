@@ -140,13 +140,12 @@ function init(){
     install_env
     mkdir -p $basepath/script/logs
     config=$basepath/script/config.ini
-    #sed -i '/^#/d' $config
     if [ $# -eq 0 ]; then
         packages=`readini common packages $config`
     else
         packages=$@
     fi
-    sections=getsections $config
+    sections=`getsections $config`
     for package in $packages
     do
         if ! [[ "$sections" =~ $package ]]; then
