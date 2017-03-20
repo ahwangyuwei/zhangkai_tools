@@ -152,9 +152,9 @@ function init(){
             command=`readini $package command $config`
             name=`readini $package name $config`
             if [[ "$name" == "" ]]; then
-                download $url
+                download "$url"
             else
-                download $url -n $name
+                download "$url" -n "$name"
             fi
         else
             command=install_$package
