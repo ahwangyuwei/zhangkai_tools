@@ -81,6 +81,7 @@ function install_openssl(){
     url="http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz"
     download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
     echo "OPENSSL_1.0.0 { global: *; };" >> openssl.ld
+    echo "OPENSSL_1.0.1 { global: *; };" >> openssl.ld
     ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions --with-openssl=$optpath/openssl
     make depend && make -j10 && make install
 }
@@ -204,7 +205,7 @@ function init(){
     install_env
     mkdir -p $basepath/script/logs
     if [ $# -eq 0 ]; then
-        modules="m4 autoconf automake jq sqlite curl zlib python ncurses vim"
+        modules="m4 autoconf automake jq sqlite curl zlib openssl python ncurses vim"
     else
         modules=$@
     fi

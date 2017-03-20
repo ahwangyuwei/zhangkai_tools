@@ -213,7 +213,8 @@ au BufRead,BufNewFile *  setfiletype txt
 autocmd BufNewFile,BufRead *.py exec ":call SetPython()"
 func SetPython()
     set list
-    set listchars=tab:>.,trail:+,extends:#,nbsp:. " 用特殊字符表示制表符，使之和空格区分
+"    set listchars=tab:>.,trail:+,extends:#,nbsp:. " 用特殊字符表示制表符，使之和空格区分
+    set listchars=trail:+ " 用特殊字符表示制表符，使之和空格区分
     set guifont=Courier_New:h10:cANSI             " 设置字体
     set cinwords=if,elif,else,for,while,try,expect,finally,def,class
 endfunc
