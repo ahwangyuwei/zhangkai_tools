@@ -6,6 +6,7 @@ basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
 mkdir -p opt tmp
 optpath=$(cd opt; pwd)
+install="./configure --prefix=$optpath && make -j10 && make install"
 
 # 修改环境变量
 function install_env(){
@@ -28,101 +29,114 @@ function install_env(){
 }
 
 function download(){
-    if ! `test -e $3`; then
-        wget $1 --no-check-certificate -O $2
-        tar xf $2
+    # 默认filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
+    url=$1
+    filename=`basename $url`
+    name=${filename%.*}
+    name=${name%.*}
+    command="wget"
+    decompress="tar xf"
+    shift 1
+    while getopts ":f:n:c:d:" opt
+    do
+        case $opt in
+            f) filename=$OPTARG;;
+            n) name=$OPTARG;;
+            c) command=$OPTARG;;
+            d) decompress=$OPTARG;;
+            ?) echo "params not defined";;
+        esac
+    done
+    if ! `test -e $name`; then
+        if [ "$command" == "wget" ]; then
+            wget $url --no-check-certificate -O $filename
+        else
+            $command $url
+        fi
+        $decompress $filename
     fi
-    cd $3
+    cd $name
 }
 
 function install_m4(){
-    url="http://ftp.gnu.org/gnu/m4/m4-1.4.7.tar.gz"
-    download $url m4-1.4.7.tar.gz m4-1.4.7
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "http://ftp.gnu.org/gnu/m4/m4-1.4.7.tar.gz"
+    $install
 }
 
 function install_autoconf(){
-    url="ftp://alpha.gnu.org/pub/gnu/autoconf/autoconf-2.68b.tar.xz"
-    download $url autoconf-2.68b.tar.xz autoconf-2.68b
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "ftp://alpha.gnu.org/pub/gnu/autoconf/autoconf-2.68b.tar.xz"
+    $install
 }
 
 function install_automake(){
-    url="http://ftp.gnu.org/gnu/automake/automake-1.15.tar.xz"
-    download $url automake-1.15.tar.xz automake-1.15
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "http://ftp.gnu.org/gnu/automake/automake-1.15.tar.xz"
+    $install
 }
 
 function install_libtool(){
-    url="http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz"
-    download $url libtool-2.4.6.tar.gz libtool-2.4.6
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz"
+    $install
 }
 
 function install_jq(){
-    url="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz"
-    download $url jq-1.5.tar.gz jq-1.5
+    download "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-1.5.tar.gz"
     ./configure --prefix=$optpath --disable-maintainer-mode && make -j10 && make install
 }
 
 function install_sqlite(){
-    url="http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz"
-    download $url sqlite-autoconf-3160200.tar.gz sqlite-autoconf-3160200
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "http://www.sqlite.org/2017/sqlite-autoconf-3160200.tar.gz"
+    $install
 }
 
 function install_zlib(){
-    url="http://zlib.net/zlib-1.2.11.tar.gz"
-    download $url zlib-1.2.11.tar.gz zlib-1.2.11
-    ./configure --prefix=$optpath && make -j11 && make install
+    download "http://zlib.net/zlib-1.2.11.tar.gz"
+    $install
 }
 
+function install_openssl_fips(){
+    download "https://www.openssl.org/source/openssl-fips-2.0.14.tar.gz"
+    ./config --prefix=$optpath && make -j10 && make install
+}
 function install_openssl(){
     version=`openssl version | awk '{print $2}'`
-    url="http://distfiles.macports.org/openssl/openssl-${version}.tar.gz"
-    download $url openssl-${version}.tar.gz openssl-${version}
+    version=1.0.2j
+    download "https://www.openssl.org/source/openssl-${version}.tar.gz"
     echo "OPENSSL_${version:0:-1} { global: *; };" > openssl.ld
     ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-${version}/openssl.ld -Wl,-Bsymbolic-functions
     make depend && make -j10 && make install
 }
 
 function install_curl(){
-    url="https://curl.haxx.se/download/curl-7.52.1.tar.gz"
-    download $url curl-7.52.1.tar.gz curl-7.52.1
+    download "https://curl.haxx.se/download/curl-7.52.1.tar.gz"
     #./configure --prefix=$optpath --disable-shared --enable-static --without-libidn --without-ssl --without-librtmp --without-gnutls --without-nss --without-libssh2 --without-zlib --without-winidn --disable-rtsp --disable-ldap --disable-ldaps --disable-ipv6 && make -j10 && make install
     ./buildconf && ./configure --prefix=$optpath --with-ssl=$optpath && make -j10 && make install
 }
 
 function install_python(){
-    url="https://www.python.org/ftp/python/2.7.12/Python-2.7.12.tgz"
-    download $url Python-2.7.12.tgz Python-2.7.12
+    download "https://www.python.org/ftp/python/2.7.12/Python-2.7.12.tgz"
     ./configure --prefix=$optpath --with-ensurepip=install && make -j10 && make install
 }
 
 function install_snappy(){
-    git clone --depth=1 https://github.com/google/snappy.git && cd snappy
-    ./autogen.sh && ./configure --prefix=$optpath && make -j10 && make install
+    download 'https://github.com/google/snappy.git' -c 'git clone --depth=1'
+    ./autogen.sh
+    $install
 }
 
-
 function install_pcre(){
-    url="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2"
-    download $url pcre-8.40.tar.bz2 pcre-8.40
-    ./configure --prefix=$optpath &&  make -j10 && make install
+    download "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2"
+    $install
 }
 
 function install_nginx(){
-    url="http://nginx.org/download/nginx-1.11.8.tar.gz"
-    download $url nginx-1.11.8.tar.gz nginx-1.11.8
+    download "http://nginx.org/download/nginx-1.11.8.tar.gz"
    #./configure --prefix=$optpath --without-http_rewrite_module && make -j10 && make install
-    wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2
-    tar xf pcre-8.40.tar.bz2
-   ./configure --prefix=$optpath --with-pcre=$basepath/tmp/nginx-1.11.8/pcre-8.40 && make -j10 && make install
+    download "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.40.tar.bz2"
+   ./configure --prefix=$optpath --with-pcre=$basepath/tmp/pcre-8.40 && make -j10 && make install
 }
 
 function install_redis(){
-    url="http://download.redis.io/redis-stable.tar.gz"
-    download $url redis-stable.tar.gz redis-stable
+    download "http://download.redis.io/redis-stable.tar.gz"
     make -j10 && cp src/redis-server $optpath/bin && cp src/redis-cli $optpath/bin
     mkdir -p $basepath/runtime/redis
     cp redis.conf $basepath/runtime/redis && sed -i 's/daemonize no/daemonize yes/g' $basepath/runtime/redis/redis.conf
@@ -131,9 +145,8 @@ function install_redis(){
 }
 
 function install_mongodb(){
-    wget http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.1.tgz
-    tar xzf mongodb-linux-x86_64-amazon-3.4.1.tgz
-    mv mongodb-linux-x86_64-amazon-3.4.1/bin/*  $optpath/bin
+    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.1.tgz" -n mongodb-linux-x86_64-amazon-3.4.1
+    cp -r bin/*  $optpath/bin
     mkdir -p $basepath/runtime/mongodb/data && mkdir -p $basepath/runtime/mongodb/logs
     cp $basepath/conf/mongod.conf $basepath/runtime/mongodb/
     cd $basepath/runtime/mongodb
@@ -150,8 +163,7 @@ function install_gcc(){
     export LIBRARY_PATH=""
     export C_INCLUDE_PATH=""
     export CPLUS_INCLUDE_PATH=""
-    url="http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz"
-    download $url gcc-5.3.0.tar.gz gcc-5.3.0
+    download "http://gcc.skazkaforyou.com/releases/gcc-5.3.0/gcc-5.3.0.tar.gz"
     ./contrib/download_prerequisites
     mkdir -p gcc-build && cd gcc-build
     ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
@@ -163,13 +175,12 @@ function install_gcc(){
 }
 
 function install_ncurses(){
-    url="http://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"
-    download $url ncurses-6.0.tar.gz  ncurses-6.0
-    ./configure --prefix=$optpath && make -j10 && make install
+    download "http://ftp.gnu.org/gnu/ncurses/ncurses-6.0.tar.gz"
+    $install
 }
 
 function install_vim(){
-    git clone --depth=1 https://github.com/vim/vim.git && cd vim
+    download "https://github.com/vim/vim.git" -c "git clone --depth=1"
     ./configure --prefix=$optpath --with-features=huge --enable-cscope --enable-fontset --enable-multibyte --enable-pythoninterp=yes --enable-luainterp=yes && make -j10 && make install
     rm -rf ~/.vimrc ~/.vim
     cp -r $basepath/vim ~/.vim
