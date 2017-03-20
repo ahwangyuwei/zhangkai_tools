@@ -121,14 +121,18 @@ function show_info(){
     echo "upload command: curl --socks5 52.34.197.81:9090 -H 'file=filename'--data-binary @filename http://$ip:7000"
 }
 
+function getsections(){
+    sed -n '/\[*\]/p' $1 | egrep -v '^#' | tr -d [] | tr -t '\n' ' '
+}
+
 function readini(){
     SECTION=$1
     KEY=$2
     CONFIG=$3
-    # sed 匹配[$SECION]到下一个[之间的所有行, egrep 去除所有包含[]和空行的, awk 打印
-    keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }'`
+    # sed 匹配[$SECION]到下一个[之间的所有行, egrep 去除所有包含[]的行、空行以及以#开头的行
+    keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }'` | tr -t '\n' ' '
     if [[ "$keys" =~ $KEY ]]; then
-        sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' -v match_key=$KEY '{ key=$1; $1=""; value=$0; gsub(/^ *| *$/, "", key); gsub(/^ *| *$/, "", value); if(key == match_key) print value}'
+        sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' -v key=$KEY '{ value=""; for(i=2;i<=NF;i++) value=value""$i"="; gsub(/^ *| *$/, "", $1); gsub(/^ *|[= ]*$/, "", value); if($1==key) print value}'
 	fi
 }
 
@@ -142,8 +146,13 @@ function init(){
     else
         packages=$@
     fi
+    sections=getsections $config
     for package in $packages
     do
+        if ! [[ "$sections" =~ $package ]]; then
+            echo "$package config not defined !!!"
+            continue
+        fi
         cd $basepath/tmp
         url=`readini $package url $config`
         command=`readini $package command $config`
@@ -156,12 +165,13 @@ function init(){
         eval "$command"  &> $basepath/script/logs/${package}.log
 
         if [[ $? -eq 0 ]]; then
+            echo "$package install succeed" >> $basepath/script/result.log
             if [[ "$package" == "python" ]]; then
                 if `grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null` ; then
                     if `nvidia-smi &>/dev/null`; then
-                        echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
+                        echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
                     else
-                        echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> requirements.txt
+                        echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
                     fi
                     pip install --upgrade -r $basepath/script/requirements.txt
                     if [[ $? -eq 0 ]]; then
@@ -173,7 +183,6 @@ function init(){
                     echo "pip install failed" >> $basepath/script/result.log
                 fi
             fi
-    	    echo "$package install succeed" >> $basepath/script/result.log
         else
             echo "$package install failed" >> $basepath/script/result.log
         fi
