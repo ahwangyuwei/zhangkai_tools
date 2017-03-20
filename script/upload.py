@@ -80,7 +80,7 @@ class HomeHandler(tornado.web.RequestHandler):
         file_dict = {}
         for item in os.listdir(path):
             filename = os.path.join(path, item)
-            key = filename.lstrip('./')
+            key = filename[2:] if filename[:2] == './' else filename
             if os.path.isfile(filename):
                 value = os.stat(filename).st_size
                 if value / (1024 * 1024 * 1024.0) >= 1:
@@ -105,15 +105,14 @@ class Application(tornado.web.Application):
         settings = dict(
             debug=options.dev,
             static_path=".",
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
+            template_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
         )
         tornado.web.Application.__init__(self, handlers, **settings)
 
 
 def main():
     tornado.options.parse_command_line()
-    port = int(options.port)
-    sockets = tornado.netutil.bind_sockets(port)
+    sockets = tornado.netutil.bind_sockets(options.port)
     server = tornado.httpserver.HTTPServer(Application(), xheaders=True, max_buffer_size=1024*1024*1024*5)
     server.add_sockets(sockets)
     tornado.ioloop.IOLoop.instance().start()
