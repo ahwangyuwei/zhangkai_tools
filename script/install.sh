@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding:utf-8 -*-
 
-#set -x
+set -x
 basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
 mkdir -p opt tmp
@@ -77,10 +77,8 @@ function install_mongodb(){
     cd $basepath/runtime/mongodb
     $optpath/bin/mongod -f $basepath/runtime/mongodb/mongod.conf
 
-#    sudo su
-#    echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
-#    echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
-#    exit
+#    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
+#    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
 }
 
 function install_gcc(){
@@ -130,7 +128,7 @@ function readini(){
     KEY=$2
     CONFIG=$3
     # sed 匹配[$SECION]到下一个[之间的所有行, egrep 去除所有包含[]的行、空行以及以#开头的行
-    keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }'` | tr -t '\n' ' '
+    keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }' | tr -t '\n' ' '`
     if [[ "$keys" =~ $KEY ]]; then
         sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' -v key=$KEY '{ value=""; for(i=2;i<=NF;i++) value=value""$i"="; gsub(/^ *| *$/, "", $1); gsub(/^ *|[= ]*$/, "", value); if($1==key) print value}'
 	fi
