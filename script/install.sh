@@ -107,10 +107,10 @@ function deploy_download(){
 }
 
 function deploy_upload(){
-    mkdir -p $basepath/upload/logs
-    ps -ef | grep $USER | grep -v grep | grep upload.py | grep 7000 | awk '{print $2}' | xargs kill -9
+    mkdir -p $basepath/upload
     cd $basepath/upload
-    nohup python $basepath/script/upload.py -port=7000 -log_file_prefix=logs/upload.log &>/dev/null &
+    ps -ef | grep $USER | grep -v grep | grep upload.py | grep 7000 | awk '{print $2}' | xargs kill -9
+    nohup python $basepath/script/upload.py -port=7000 -log_file_prefix=$basepath/script/logs/upload.log &>/dev/null &
 }
 
 function show_info(){

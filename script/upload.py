@@ -16,8 +16,9 @@ import logging
 import commands
 import uuid
 
+
 from tornado.options import define, options
-define("port", default=8080, help="run on the given port", type=int)
+define("port", default=7000, help="run on the given port", type=int)
 define("dev",  default=True, help="dev mode", type=bool)
 
 
@@ -74,15 +75,22 @@ class UploadHandler(tornado.web.RequestHandler):
 class HomeHandler(tornado.web.RequestHandler):
 
     def get(self):
-        files = filter(lambda x: os.path.isfile(x), os.listdir('.'))
-        file_dict = dict(map(lambda x: (x, os.stat(x).st_size), files))
-        for key, value in file_dict.items():
-            if value / (1024 * 1024 * 1024.0) >= 1:
-                file_dict[key] = '%s GB' % round(value / (1024 * 1024 * 1024.0), 2)
-            elif value / (1024 * 1024.0) >= 1:
-                file_dict[key] = '%s MB' % round(value / (1024 * 1024.0), 2)
+        root = self.application.settings["static_path"]
+        path = os.path.join(root, self.request.path.strip('/'))
+        file_dict = {}
+        for item in os.listdir(path):
+            filename = os.path.join(path, item)
+            key = filename.lstrip('./')
+            if os.path.isfile(filename):
+                value = os.stat(filename).st_size
+                if value / (1024 * 1024 * 1024.0) >= 1:
+                    file_dict[key] = '%s GB' % round(value / (1024 * 1024 * 1024.0), 2)
+                elif value / (1024 * 1024.0) >= 1:
+                    file_dict[key] = '%s MB' % round(value / (1024 * 1024.0), 2)
+                else:
+                    file_dict[key] = '%s KB' % round(value / (1024.0), 2)
             else:
-                file_dict[key] = '%s KB' % round(value / (1024.0), 2)
+                file_dict[key] = "DIRECTORY"
         self.render('index.html', file_dict=file_dict)
 
 
