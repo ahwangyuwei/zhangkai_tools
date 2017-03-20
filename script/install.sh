@@ -146,18 +146,18 @@ function init(){
     sections=`getsections $config`
     for package in $packages
     do
-        if ! [[ "$sections" =~ $package ]]; then
-            echo "$package config not defined !!!"
-            continue
-        fi
         cd $basepath/tmp
-        url=`readini $package url $config`
-        command=`readini $package command $config`
-		name=`readini $package name $config`
-        if [[ "$name" == "" ]]; then
-            download $url
+        if [[ "$sections" =~ $package ]]; then
+            url=`readini $package url $config`
+            command=`readini $package command $config`
+            name=`readini $package name $config`
+            if [[ "$name" == "" ]]; then
+                download $url
+            else
+                download $url -n $name
+            fi
         else
-          download $url -n $name
+            command=install_$package
         fi
         eval "$command"  &> $basepath/script/logs/${package}.log
 
