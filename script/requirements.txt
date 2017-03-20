@@ -2,3 +2,12 @@ pip
 requests
 tornado
 ipython
+beautifulsoup4
+html5lib
+Image
+lxml
+numpy
+prettytable
+pymongo
+redis
+pycurl
