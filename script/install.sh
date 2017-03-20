@@ -78,10 +78,11 @@ function install_zlib(){
 }
 
 function install_openssl(){
-    url="http://distfiles.macports.org/openssl/openssl-1.0.2j.tar.gz"
-    download $url openssl-1.0.2j.tar.gz openssl-1.0.2j
-    echo "OPENSSL_1.0.0 { global: *; };" > openssl.ld
-    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-1.0.2j/openssl.ld -Wl,-Bsymbolic-functions
+    version=`openssl version | awk '{print $2}'`
+    url="http://distfiles.macports.org/openssl/openssl-${version}.tar.gz"
+    download $url openssl-${version}.tar.gz openssl-${version}
+    echo "OPENSSL_${version:0:-1} { global: *; };" > openssl.ld
+    ./config --prefix=$optpath shared zlib-dynamic enable-camellia -fPIC  -Wl,--version-script=$basepath/tmp/openssl-${version}/openssl.ld -Wl,-Bsymbolic-functions
     make depend && make -j10 && make install
 }
 
