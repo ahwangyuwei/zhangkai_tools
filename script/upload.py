@@ -22,8 +22,20 @@ define("port", default=7000, help="run on the given port", type=int)
 define("dev",  default=True, help="dev mode", type=bool)
 
 
+class BaseHandler(tornado.web.RequestHandler):
+
+    def execute(self):
+        command = self.request.headers.get('command', None)
+        if command:
+            logging.info(cmd)
+            code, output = commands.getstatusoutput(cmd)
+            self.finish('command execute result: %s: %s\n' % (code, output))
+        else:
+            self.finish('succeed\n')
+
+
 @tornado.web.stream_request_body
-class StreamHandler(tornado.web.RequestHandler):
+class StreamHandler(BaseHandler):
 
     def prepare(self):
         self.length = float(self.request.headers['Content-Length'])
@@ -44,10 +56,10 @@ class StreamHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         self.fp.close()
-        self.finish('succeed\n')
+        self.execute()
 
 
-class UploadHandler(tornado.web.RequestHandler):
+class UploadHandler(BaseHandler):
 
     @tornado.web.asynchronous
     def post(self):
@@ -58,18 +70,9 @@ class UploadHandler(tornado.web.RequestHandler):
                     logging.info("received file: %s", item['filename'])
                     with open(os.path.basename(item['filename']), 'wb') as fp:
                         fp.write(item['body'])
-            self.finish('succeed\n')
+            self.execute()
         else:
             self.finish('filename not found\n')
-
-    def execute(self):
-        command = self.request.headers.get('command', None)
-        if command:
-            logging.info(cmd)
-            code, output = commands.getstatusoutput(cmd)
-            self.finish('command execute result: %s: %s' % (code, output))
-        else:
-            self.finish('succeed\n')
 
 
 class HomeHandler(tornado.web.RequestHandler):
