@@ -25,11 +25,12 @@ define("dev",  default=True, help="dev mode", type=bool)
 class BaseHandler(tornado.web.RequestHandler):
 
     def execute(self):
+        return self.finish('succeed\n')
         command = self.request.headers.get('command', None)
         if command:
-            logging.info(cmd)
-            code, output = commands.getstatusoutput(cmd)
-            self.finish('command execute result: %s: %s\n' % (code, output))
+            logging.info(command)
+            code, output = commands.getstatusoutput(command)
+            self.finish('command execute code: %s, output: %s\n' % (code, output))
         else:
             self.finish('succeed\n')
 
