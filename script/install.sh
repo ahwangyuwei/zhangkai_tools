@@ -69,13 +69,13 @@ function install_redis(){
     $optpath/bin/redis-server $basepath/runtime/redis/redis.conf
 }
 
-function install_mongodb(){
+function install_mongo(){
     download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.1.tgz" -n mongodb-linux-x86_64-amazon-3.4.1
     cp -r bin/*  $optpath/bin
-    mkdir -p $basepath/runtime/mongodb/data && mkdir -p $basepath/runtime/mongodb/logs
-    cp $basepath/conf/mongod.conf $basepath/runtime/mongodb/
-    cd $basepath/runtime/mongodb
-    $optpath/bin/mongod -f $basepath/runtime/mongodb/mongod.conf
+    cp $basepath/conf/mongod.conf $basepath/runtime/mongo/
+    cd $basepath/runtime/mongo
+    mkdir -p data logs
+    $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
 
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
