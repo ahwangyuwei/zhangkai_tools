@@ -63,19 +63,21 @@ function download(){
 function install_redis(){
     download "http://download.redis.io/redis-stable.tar.gz"
     make -j10 && cp src/redis-server $optpath/bin && cp src/redis-cli $optpath/bin
-    mkdir -p $basepath/runtime/redis
-    cp redis.conf $basepath/runtime/redis && sed -i 's/daemonize no/daemonize yes/g' $basepath/runtime/redis/redis.conf
+    mkdir -p $optpath/bin $basepath/runtime/redis
+    cp redis.conf $basepath/runtime/redis
+    sed -i 's/daemonize no/daemonize yes/g' $basepath/runtime/redis/redis.conf
     cd $basepath/runtime/redis
     $optpath/bin/redis-server $basepath/runtime/redis/redis.conf
 }
 
 function install_mongo(){
     download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.1.tgz" -n mongodb-linux-x86_64-amazon-3.4.1
+    mkdir -p $optpath/bin $basepath/runtime/mongo
     cp -r bin/*  $optpath/bin
-    cp $basepath/conf/mongod.conf $basepath/runtime/mongo/
+    cp $basepath/conf/mongod.conf $basepath/runtime/mongo/mongod.conf
     cd $basepath/runtime/mongo
     mkdir -p data logs
-    $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
+    numactl --interleave=all $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
 
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
