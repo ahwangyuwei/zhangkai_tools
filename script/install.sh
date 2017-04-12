@@ -23,7 +23,7 @@ function install_env(){
         echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> /home/$USER/.bashrc
         # pkgconfig 路径
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> /home/$USER/.bashrc
-        echo "export LC_ALL=en_US.UTF-8" >> /home/$USER/.bashrc
+        echo "export LC_ALL=C" >> /home/$USER/.bashrc
     fi
     if `test -e /home/$USER/.bashrc`; then
         source /home/$USER/.bashrc
