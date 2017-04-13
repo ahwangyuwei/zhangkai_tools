@@ -38,34 +38,6 @@ class BaseHandler(tornado.web.RequestHandler):
             self.finish('succeed\n')
 
 
-@tornado.web.stream_request_body
-class StreamHandler(BaseHandler):
-
-    def prepare(self):
-        self.received = 0
-        self.process = 0
-        filename = self.get_argument('file', None)
-        if filename:
-            self.length = float(self.request.headers['Content-Length'])
-            self.fp = open(os.path.basename(filename), 'wb')
-        else:
-            self.finish('file not found\n')
-
-    def data_received(self, chunk):
-        self.received += len(chunk)
-        process = self.received / self.length * 100
-        if int(process) > self.process + 5:
-            self.process = int(process)
-            self.write('uploading process %.2f%%\n' % process)
-            self.flush()
-        self.fp.write(chunk)
-
-    @tornado.web.asynchronous
-    def post(self):
-        self.fp.close()
-        self.execute()
-
-
 class UploadHandler(BaseHandler):
 
     @tornado.web.asynchronous
@@ -74,14 +46,15 @@ class UploadHandler(BaseHandler):
             for key, items in self.request.files.items():
                 for item in items:
                     logging.info("received file: %s", item['filename'])
-                    with open(os.path.basename(item['filename']), 'wb') as fp:
+                    with open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb') as fp:
                         fp.write(item['body'])
             self.execute()
         else:
             self.finish('file not found\n')
 
 
-class HomeHandler(tornado.web.RequestHandler):
+@tornado.web.stream_request_body
+class HomeHandler(BaseHandler):
 
     def get(self):
         root = self.application.settings["static_path"]
@@ -102,12 +75,35 @@ class HomeHandler(tornado.web.RequestHandler):
                 file_dict[key] = "DIRECTORY"
         self.render('index.html', file_dict=file_dict)
 
+    def prepare(self):
+        self.received = 0
+        self.process = 0
+        self.length = float(self.request.headers['Content-Length'])
+        filename = self.get_argument('file', None)
+        if filename:
+            self.fp = open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb')
+        else:
+            self.finish('file not found\n')
+
+    def data_received(self, chunk):
+        self.received += len(chunk)
+        process = self.received / self.length * 100
+        if int(process) > self.process + 5:
+            self.process = int(process)
+            self.write('uploading process %.2f%%\n' % process)
+            self.flush()
+        self.fp.write(chunk)
+
+    @tornado.web.asynchronous
+    def post(self):
+        self.fp.close()
+        self.execute()
+
 
 class Application(tornado.web.Application):
 
     def __init__(self):
         handlers = [
-            (r"/stream", StreamHandler),
             (r"/upload", UploadHandler),
             (r"/.*", HomeHandler),
         ]
