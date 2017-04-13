@@ -133,7 +133,7 @@ function install_upload(){
 function show_info(){
     ip=`/sbin/ifconfig | grep "inet addr" | awk -F ':' '{print $2}' | awk '{print $1}' | grep -v '127.0.0.1'`
     echo "upload path: $basepath/upload"
-    echo "upload command: curl --socks5 52.34.197.81:9090 --data-binary @filename http://$ip:7000?file=filename"
+    echo "upload command: curl --socks5 52.34.197.81:9090 --data-binary @filename http://$ip:7000\?file=filename"
 }
 
 function getsections(){

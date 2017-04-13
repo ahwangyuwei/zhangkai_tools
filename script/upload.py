@@ -11,7 +11,6 @@ import tornado.ioloop
 import tornado.autoreload
 import tornado.escape
 import tornado.web
-import uuid
 import re
 import logging
 import commands
@@ -76,15 +75,16 @@ class HomeHandler(BaseHandler):
         self.render('index.html', file_dict=file_dict)
 
     def prepare(self):
-        self.received = 0
-        self.process = 0
-        self.length = float(self.request.headers['Content-Length'])
-        filename = self.get_argument('file', None)
-        if filename:
-            logging.info("received file: %s", filename)
-            self.fp = open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb')
-        else:
-            self.finish('file not found\n')
+        if self.request.method == 'POST':
+            self.received = 0
+            self.process = 0
+            self.length = float(self.request.headers['Content-Length'])
+            filename = self.get_argument('file', None)
+            if filename:
+                logging.info("received file: %s", filename)
+                self.fp = open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb')
+            else:
+                self.finish('file not found\n')
 
     def data_received(self, chunk):
         self.received += len(chunk)
