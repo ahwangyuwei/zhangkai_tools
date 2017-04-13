@@ -12,6 +12,7 @@ import tornado.autoreload
 import tornado.escape
 import tornado.web
 import uuid
+import re
 import logging
 import commands
 import uuid
@@ -25,12 +26,14 @@ define("dev",  default=True, help="dev mode", type=bool)
 class BaseHandler(tornado.web.RequestHandler):
 
     def execute(self):
-        return self.finish('succeed\n')
         command = self.request.headers.get('command', None)
         if command:
             logging.info(command)
-            code, output = commands.getstatusoutput(command)
-            self.finish('command execute code: %s, output: %s\n' % (code, output))
+            if re.match('^(tar|unzip)', command):
+                code, output = commands.getstatusoutput(command)
+                self.finish('command execute code: %s, output: %s\n' % (code, output))
+            else:
+                self.finish('command not accpeted\n')
         else:
             self.finish('succeed\n')
 
@@ -39,16 +42,19 @@ class BaseHandler(tornado.web.RequestHandler):
 class StreamHandler(BaseHandler):
 
     def prepare(self):
-        self.length = float(self.request.headers['Content-Length'])
         self.received = 0
         self.process = 0
-        filename = self.request.headers.get('file', uuid.uuid4().hex)
-        self.fp = open(os.path.basename(filename), 'wb')
+        filename = self.get_argument('file', None)
+        if filename:
+            self.length = float(self.request.headers['Content-Length'])
+            self.fp = open(os.path.basename(filename), 'wb')
+        else:
+            self.finish('file not found\n')
 
     def data_received(self, chunk):
         self.received += len(chunk)
         process = self.received / self.length * 100
-        if int(process) > self.process:
+        if int(process) > self.process + 5:
             self.process = int(process)
             self.write('uploading process %.2f%%\n' % process)
             self.flush()
@@ -64,7 +70,6 @@ class UploadHandler(BaseHandler):
 
     @tornado.web.asynchronous
     def post(self):
-        ip = self.request.headers['X-Real-Ip'].split(",")[0] if 'X-Real-Ip' in self.request.headers else self.request.remote_ip
         if self.request.files:
             for key, items in self.request.files.items():
                 for item in items:
@@ -73,7 +78,7 @@ class UploadHandler(BaseHandler):
                         fp.write(item['body'])
             self.execute()
         else:
-            self.finish('filename not found\n')
+            self.finish('file not found\n')
 
 
 class HomeHandler(tornado.web.RequestHandler):
@@ -108,10 +113,10 @@ class Application(tornado.web.Application):
         ]
         settings = dict(
             debug=options.dev,
-            static_path=".",
+            static_path="files",
             template_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
         )
-        tornado.web.Application.__init__(self, handlers, **settings)
+        super(Application, self).__init__(handlers, **settings)
 
 
 def main():
