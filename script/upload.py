@@ -109,7 +109,7 @@ class Application(tornado.web.Application):
         ]
         settings = dict(
             debug=options.dev,
-            static_path="files",
+            static_path=".",
             template_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
         )
         super(Application, self).__init__(handlers, **settings)

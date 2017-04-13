@@ -126,7 +126,7 @@ function deploy_download(){
 function deploy_upload(){
     mkdir -p $basepath/upload
     cd $basepath/upload
-    ps -ef | grep $USER | grep -v grep | grep upload.py | grep 7000 | awk '{print $2}' | xargs kill -9
+    ps -ef | grep upload.py | grep -v "grep" | grep "port=7000" | awk '{print $2}' | xargs kill -9
     nohup python $basepath/script/upload.py -port=7000 -log_file_prefix=$basepath/script/logs/upload.log &>/dev/null &
 }
 
