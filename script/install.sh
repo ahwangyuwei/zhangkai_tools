@@ -114,7 +114,7 @@ function install_pyenv(){
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.12
 }
 
-function deploy_download(){
+function install_download(){
     mkdir -p $basepath/download
     download_path="${basepath//\//\\\/}\/download"
     sed -i "s/download_path/$download_path/g" $basepath/conf/nginx.conf
@@ -123,7 +123,7 @@ function deploy_download(){
     $optpath/sbin/nginx -c $optpath/conf/nginx.conf
 }
 
-function deploy_upload(){
+function install_upload(){
     mkdir -p $basepath/upload
     cd $basepath/upload
     ps -ef | grep upload.py | grep -v "grep" | grep "port=7000" | awk '{print $2}' | xargs kill -9
@@ -192,7 +192,7 @@ function init(){
                     fi
                     pip install --upgrade -r $basepath/script/requirements.txt
                     if [[ $? -eq 0 ]]; then
-                        deploy_upload
+                        install_upload
                         show_info
                     fi
                     echo "pip install succeed" >> $basepath/script/result.log
