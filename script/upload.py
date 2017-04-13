@@ -15,7 +15,6 @@ import uuid
 import re
 import logging
 import commands
-import uuid
 
 
 from tornado.options import define, options
@@ -45,7 +44,8 @@ class UploadHandler(BaseHandler):
         if self.request.files:
             for key, items in self.request.files.items():
                 for item in items:
-                    logging.info("received file: %s", item['filename'])
+                    filename = item['filename']
+                    logging.info("received file: %s", filename)
                     with open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb') as fp:
                         fp.write(item['body'])
             self.execute()
@@ -81,6 +81,7 @@ class HomeHandler(BaseHandler):
         self.length = float(self.request.headers['Content-Length'])
         filename = self.get_argument('file', None)
         if filename:
+            logging.info("received file: %s", filename)
             self.fp = open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb')
         else:
             self.finish('file not found\n')
