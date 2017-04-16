@@ -24,6 +24,10 @@ function install_env(){
         # pkgconfig 路径
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> /home/$USER/.bashrc
         echo "export LC_ALL=C" >> /home/$USER/.bashrc
+        # pyenv
+        echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
+        echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
+        echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
     fi
     if `test -e /home/$USER/.bashrc`; then
         source /home/$USER/.bashrc
@@ -107,11 +111,7 @@ function install_pyenv(){
     export PYENV_ROOT=/home/$USER/.pyenv
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
 
-    echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
-    echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
-    echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
 
-    source ~/.bashrc
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
     pyenv install 2.7.13
     pyenv global 2.7.13
