@@ -111,7 +111,10 @@ function install_pyenv(){
     echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
     echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
 
-    #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.12
+    source ~/.bashrc
+    CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.13
+    CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
+    pyenv global 2.7.13
 }
 
 function install_download(){
