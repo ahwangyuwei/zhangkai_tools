@@ -113,3 +113,38 @@ class Dict(dict):
         # except KeyError as k:
             # raise AttributeError, k
 
+class DefaultDict(Dict):
+
+    def __init__(self, default_factory=None, *args, **kwargs):
+        if default_factory is not None and not hasattr(default_factory, '__call__'):
+            raise TypeError('first argument must be callable')
+        super(DefaultDict, self).__init__(*args, **kwargs)
+        self.__dict__['default_factory'] = default_factory
+
+    def __missing__(self, key):
+        if self.__dict__['default_factory'] is None:
+            raise KeyError(key)
+        self[key] = self.__dict__['default_factory']()
+        return self[key]
+
+    def __len__(self):
+        return super(DefaultDict, self).__len__()
+
+    def __reduce__(self):
+        if self.__dict__['default_factory'] is None:
+            args = tuple()
+        else:
+            args = (self.__dict__['default_factory'], )
+        return type(self), args, None, None, self.iteritems()
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        return type(self)(self.__dict__['default_factory'], self)
+
+    def __deepcopy__(self, memo):
+        return type(self)(self.__dict__['default_factory'], copy.deepcopy(self.items()))
+
+    def __repr__(self):
+        return 'DefaultDict(%s, %s)' % (self.__dict__['default_factory'], Dict.__repr__(self))
