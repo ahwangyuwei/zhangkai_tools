@@ -6,31 +6,31 @@ basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
 mkdir -p opt tmp
 optpath=$(cd opt; pwd)
-install="./configure --prefix=$optpath && make -j10 && make install"
 
 # 修改环境变量
 function install_env(){
-    if ! `grep C_INCLUDE_PATH /home/$USER/.bashrc &>/dev/null` && `test -e /home/$USER/.bashrc`; then
-        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> /home/$USER/.bashrc
-        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> /home/$USER/.bashrc
+    if ! `grep C_INCLUDE_PATH ~/.bashrc &>/dev/null` && `test -e ~/.bashrc`; then
+        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
+        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
         # 动态链接库路径
-        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> /home/$USER/.bashrc
+        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
         # 静态链接库路径
-        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> /home/$USER/.bashrc
+        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
         # gcc 头文件路径
-        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> /home/$USER/.bashrc
+        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
         # g++ 头文件路径
-        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> /home/$USER/.bashrc
+        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> ~/.bashrc
         # pkgconfig 路径
-        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> /home/$USER/.bashrc
-        echo "export LC_ALL=C" >> /home/$USER/.bashrc
+        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bashrc
+        echo "export LC_ALL=C" >> ~/.bashrc
         # pyenv
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
         echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
+        echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
     fi
-    if `test -e /home/$USER/.bashrc`; then
-        source /home/$USER/.bashrc
+    if `test -e ~/.bashrc`; then
+        source ~/.bashrc
     fi
 }
 
@@ -112,6 +112,7 @@ function install_pyenv(){
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
 
 
+    export PYTHON_CONFIGURE_OPTS="--enable-shared"
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
     pyenv install 2.7.13
     pyenv global 2.7.13
