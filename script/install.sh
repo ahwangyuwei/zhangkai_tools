@@ -9,6 +9,7 @@ optpath=$(cd opt; pwd)
 
 # 修改环境变量
 function install_env(){
+    export PYENV_ROOT=/home/$USER/.pyenv
     if ! `grep C_INCLUDE_PATH ~/.bashrc &>/dev/null` && `test -e ~/.bashrc`; then
         echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
@@ -108,14 +109,14 @@ function install_gcc(){
 }
 
 function install_pyenv(){
-    export PYENV_ROOT=/home/$USER/.pyenv
-    curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+    source ~/.bashrc
 
+    curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
 
     export PYTHON_CONFIGURE_OPTS="--enable-shared"
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
-    pyenv install 2.7.13
-    pyenv global 2.7.13
+    #pyenv install 2.7.13
+    #pyenv global 2.7.13
 }
 
 function install_download(){
