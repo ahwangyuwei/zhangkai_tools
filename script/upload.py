@@ -6,19 +6,20 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 import os
+import re
+import logging
+import commands
 import tornado.httpserver
 import tornado.ioloop
 import tornado.autoreload
 import tornado.escape
 import tornado.web
-import re
-import logging
-import commands
 
 
 from tornado.options import define, options
 define("port", default=7000, help="run on the given port", type=int)
 define("dev",  default=True, help="dev mode", type=bool)
+define("path", default=".", help="video cp data upload server path", type=str)
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -33,7 +34,7 @@ class BaseHandler(tornado.web.RequestHandler):
             else:
                 self.finish('command not accpeted\n')
         else:
-            self.finish('succeed\n')
+            self.finish('upload succeed\n')
 
 
 class UploadHandler(BaseHandler):
@@ -45,7 +46,7 @@ class UploadHandler(BaseHandler):
                 for item in items:
                     filename = item['filename']
                     logging.info("received file: %s", filename)
-                    with open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb') as fp:
+                    with open(os.path.join(options.path, os.path.basename(filename)), 'wb') as fp:
                         fp.write(item['body'])
             self.execute()
         else:
@@ -56,12 +57,11 @@ class UploadHandler(BaseHandler):
 class HomeHandler(BaseHandler):
 
     def get(self):
-        root = self.application.settings["static_path"]
-        path = os.path.join(root, self.request.path.strip('/'))
+        path = os.path.join(options.path, self.request.path.strip('/'))
         file_dict = {}
         for item in os.listdir(path):
             filename = os.path.join(path, item)
-            key = filename[2:] if filename[:2] == './' else filename
+            key = filename[len(options.path):].strip('/')
             if os.path.isfile(filename):
                 value = os.stat(filename).st_size
                 if value / (1024 * 1024 * 1024.0) >= 1:
@@ -80,9 +80,12 @@ class HomeHandler(BaseHandler):
             self.process = 0
             self.length = float(self.request.headers['Content-Length'])
             filename = self.get_argument('file', None)
+            if not filename:
+                filename = self.request.path.strip('/')
+
             if filename:
                 logging.info("received file: %s", filename)
-                self.fp = open(os.path.join(self.application.settings['static_path'], os.path.basename(filename)), 'wb')
+                self.fp = open(os.path.join(options.path, os.path.basename(filename)), 'wb')
             else:
                 self.finish('file not found\n')
 
@@ -106,11 +109,12 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/upload", UploadHandler),
+            (r"/download/(.*)", tornado.web.StaticFileHandler, {'path': options.path}),
             (r"/.*", HomeHandler),
         ]
         settings = dict(
             debug=options.dev,
-            static_path=".",
+            static_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"),
             template_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
         )
         super(Application, self).__init__(handlers, **settings)
