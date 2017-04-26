@@ -10,7 +10,7 @@ optpath=$(cd opt; pwd)
 # 修改环境变量
 function install_env(){
     export PYENV_ROOT=/home/$USER/.pyenv
-    if ! `grep C_INCLUDE_PATH ~/.bashrc &>/dev/null` && `test -e ~/.bashrc`; then
+    if ! `grep C_INCLUDE_PATH ~/.bashrc &>/dev/null`; then
         echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
         # 动态链接库路径
