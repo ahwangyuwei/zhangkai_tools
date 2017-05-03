@@ -24,11 +24,6 @@ function install_env(){
         # pkgconfig 路径
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bashrc
         echo "export LC_ALL=C" >> ~/.bashrc
-        # pyenv
-        echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
-        echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
-        echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
-        echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
     fi
     if `test -e ~/.bashrc`; then
         source ~/.bashrc
@@ -109,9 +104,18 @@ function install_gcc(){
 }
 
 function install_pyenv(){
+    if ! `grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null`; then
+        # pyenv
+        echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
+        echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
+    fi
     source ~/.bashrc
-
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+    if ! `grep "virtualenv-init" ~/.bashrc &>/dev/null`; then
+        echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
+        echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
+    fi
+    source ~/.bashrc
 
     export PYTHON_CONFIGURE_OPTS="--enable-shared"
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
