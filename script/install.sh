@@ -10,7 +10,7 @@ optpath=$(cd opt; pwd)
 # 修改环境变量
 function install_env(){
     export PYENV_ROOT=/home/$USER/.pyenv
-    if ! `grep C_INCLUDE_PATH ~/.bashrc &>/dev/null`; then
+    if ! grep C_INCLUDE_PATH ~/.bashrc &>/dev/null; then
         echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
         # 动态链接库路径
@@ -25,9 +25,7 @@ function install_env(){
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bashrc
         echo "export LC_ALL=C" >> ~/.bashrc
     fi
-    if `test -e ~/.bashrc`; then
-        source ~/.bashrc
-    fi
+    test -e ~/.basrc && source ~/.bashrc
 }
 
 function download(){
@@ -104,14 +102,14 @@ function install_gcc(){
 }
 
 function install_pyenv(){
-    if ! `grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null`; then
+    if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
         # pyenv
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
     fi
     source ~/.bashrc
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
-    if ! `grep "virtualenv-init" ~/.bashrc &>/dev/null`; then
+    if ! grep "virtualenv-init" ~/.bashrc &>/dev/null; then
         echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
         echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
     fi
@@ -125,9 +123,9 @@ function install_pyenv(){
 
 function install_download(){
     mkdir -p $basepath/download
-    download_path="${basepath//\//\\\/}\/download"
-    sed -i "s/download_path/$download_path/g" $basepath/conf/nginx.conf
+    download_path="${basepath//\//\/}\/download"
     cp $basepath/conf/nginx.conf $optpath/conf/nginx.conf
+    sed -i "s/download_path/$download_path/g" $optpath/conf/nginx.conf
     ps -ef | grep $USER | grep -v grep | grep nginx | awk '{print $2}' | xargs kill -9
     $optpath/sbin/nginx -c $optpath/conf/nginx.conf
 }
