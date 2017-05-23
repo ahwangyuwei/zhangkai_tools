@@ -130,7 +130,9 @@ function install_supervisor(){
     cp $basepath/conf/supervisord.conf $basepath/runtime/supervisor/
     cd $basepath/runtime/supervisor
     supervisord -c $basepath/runtime/supervisor/supervisord.conf
-    echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.conf'" >> ~/.bashrc
+    if ! grep supervisorctl ~/.bashrc &>/dev/null; then
+        echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.conf'" >> ~/.bashrc
+    fi
     #sudo chkconfig supervisord on
 }
 
