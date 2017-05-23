@@ -105,14 +105,12 @@ function install_pyenv(){
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
     fi
-    source ~/.bashrc
-    curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+    curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | sh
     if ! grep "virtualenv-init" ~/.bashrc &>/dev/null; then
         echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
         echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
     fi
-    source ~/.bashrc
-
+    command -v pyenv &>/dev/null && source ~/.bashrc || return 1
     export PYTHON_CONFIGURE_OPTS="--enable-shared"
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
     #pyenv install 2.7.13
@@ -127,6 +125,7 @@ function install_supervisor(){
     pip install supervisor
 
     cp $basepath/conf/supervisord.conf $basepath/runtime/supervisor/
+    cd $basepath/runtime/supervisor
     supervisord -c $basepath/runtime/supervisor/supervisord.conf
     echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.conf'" >> ~/.bashrc
     #sudo chkconfig supervisord on
@@ -197,7 +196,7 @@ function init(){
         else
             command=install_$package
         fi
-        eval "$command"  &> $basepath/script/logs/${package}.log
+        set -o pipefail; eval "$command" | tee -a $basepath/script/logs/${package}.log
 
         if [[ $? -eq 0 ]]; then
             echo "$package install succeed" >> $basepath/script/result.log
