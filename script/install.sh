@@ -104,17 +104,20 @@ function install_pyenv(){
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
+        echo "PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
     fi
+    source ~/.bashrc
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | sh
     if ! grep "virtualenv-init" ~/.bashrc &>/dev/null; then
         echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
         echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
     fi
-    command -v pyenv &>/dev/null && source ~/.bashrc || return 1
-    export PYTHON_CONFIGURE_OPTS="--enable-shared"
-    #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
-    #pyenv install 2.7.13
-    #pyenv global 2.7.13
+    if command -v pyenv &>/dev/null; then
+        source ~/.bashrc
+        #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
+        pyenv install 2.7.13
+        pyenv global 2.7.13
+    fi
 }
 
 function install_supervisor(){
