@@ -9,7 +9,6 @@ optpath=$(cd opt; pwd)
 
 # 修改环境变量
 function install_env(){
-    export PYENV_ROOT=/home/$USER/.pyenv
     if ! grep C_INCLUDE_PATH ~/.bashrc &>/dev/null; then
         echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
         echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
@@ -31,12 +30,10 @@ function install_env(){
 function download(){
     # filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
     url=$1
-    filename=`basename $url`
+    filename=`basename "$url"`
     name=${filename%.*}
-    if [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz) ]]; then
-        name=${name%.*}
-    fi
-    decompress="tar xf"
+    [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] && name=${name%.*}
+    [[ "$filename" =~ (zip)$ ]] && decompress="unzip" || decompress="tar xf"
     shift 1
     while getopts ":f:n:d:" opt
     do
@@ -102,6 +99,8 @@ function install_gcc(){
 }
 
 function install_pyenv(){
+    mkdir -p $basepath/runtime/pyenv
+    export PYENV_ROOT=$basepath/runtime/pyenv
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
@@ -118,6 +117,19 @@ function install_pyenv(){
     #CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
     #pyenv install 2.7.13
     #pyenv global 2.7.13
+}
+
+function install_supervisor(){
+    mkdir -p $basepath/runtime/supervisor/logs
+    mkdir -p $basepath/runtime/supervisor/proc
+    mkdir -p $basepath/runtime/supervisor/conf.d
+    
+    pip install supervisor
+
+    cp $basepath/conf/supervisord.conf $basepath/runtime/supervisor/
+    supervisord -c $basepath/runtime/supervisor/supervisord.conf
+    echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.conf'" >> ~/.bashrc
+    #sudo chkconfig supervisord on
 }
 
 function install_download(){

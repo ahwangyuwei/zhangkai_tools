@@ -7,6 +7,7 @@ sys.setdefaultencoding('utf-8')
 
 import os
 import re
+import shutil
 import logging
 import commands
 import tornado.httpserver
@@ -41,7 +42,6 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class UploadHandler(BaseHandler):
 
-    @tornado.web.asynchronous
     def post(self):
         if self.request.files:
             for key, items in self.request.files.items():
@@ -58,8 +58,8 @@ class UploadHandler(BaseHandler):
 @tornado.web.stream_request_body
 class HomeHandler(BaseHandler):
 
-    def get(self):
-        path = os.path.join(options.path, self.request.path.strip('/'))
+    def get(self, path):
+        path = os.path.join(options.path, path)
         file_dict = {}
         for item in os.listdir(path):
             filename = os.path.join(path, item)
@@ -75,6 +75,17 @@ class HomeHandler(BaseHandler):
             else:
                 file_dict[key] = "DIRECTORY"
         self.render('index.html', file_dict=file_dict)
+
+    def delete(self, path):
+        path = os.path.join(options.path, path)
+        if os.path.isfile(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            return self.finish('%s not exists\n' % self.request.path.strip('/'))
+
+        return self.finish('%s removed\n' % self.request.path.strip('/'))
 
     def prepare(self):
         if self.request.method == 'POST':
@@ -101,7 +112,7 @@ class HomeHandler(BaseHandler):
         self.fp.write(chunk)
 
     @tornado.web.asynchronous
-    def post(self):
+    def post(self, path):
         self.fp.close()
         self.execute()
 
@@ -112,7 +123,7 @@ class Application(tornado.web.Application):
         handlers = [
             (r"/upload", UploadHandler),
             (r"/download/(.*)", tornado.web.StaticFileHandler, {'path': options.path}),
-            (r"/.*", HomeHandler),
+            (r"/(.*)", HomeHandler),
         ]
         settings = dict(
             debug=options.dev,
