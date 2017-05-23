@@ -25,9 +25,11 @@ define("path", default=".", help="video cp data upload server path", type=str)
 class BaseHandler(tornado.web.RequestHandler):
 
     def execute(self):
-        command = self.request.headers.get('command', None)
+        command = self.get_argument('command', None)
+        if not command:
+            command = self.request.headers.get('command', None)
         if command:
-            logging.info(command)
+            command = command.strip()
             if re.match('^(tar|unzip)', command):
                 code, output = commands.getstatusoutput(command)
                 self.finish('command execute code: %s, output: %s\n' % (code, output))

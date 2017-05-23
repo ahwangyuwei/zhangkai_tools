@@ -47,7 +47,7 @@ function download(){
             ?) echo "error";;
         esac
     done
-    if ! `test -e $name`; then
+    if ! test -e $name; then
         if [[ "$url" =~ ^(http|ftp) ]]; then
             wget $url --no-check-certificate -O $filename
             $decompress $filename
@@ -75,7 +75,7 @@ function install_mongo(){
     cp $basepath/conf/mongod.conf $basepath/runtime/mongo/mongod.conf
     cd $basepath/runtime/mongo
     mkdir -p data logs
-    if `numactl &>/dev/null`; then
+    if command -v numactl &>/dev/null; then
         numactl --interleave=all $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
     else
         $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
@@ -103,7 +103,6 @@ function install_gcc(){
 
 function install_pyenv(){
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
-        # pyenv
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
     fi
@@ -122,8 +121,8 @@ function install_pyenv(){
 }
 
 function install_download(){
-    mkdir -p $basepath/download
-    download_path="${basepath//\//\/}\/download"
+    mkdir -p $basepath/upload
+    download_path="${basepath//\//\/}\/upload"
     cp $basepath/conf/nginx.conf $optpath/conf/nginx.conf
     sed -i "s/download_path/$download_path/g" $optpath/conf/nginx.conf
     ps -ef | grep $USER | grep -v grep | grep nginx | awk '{print $2}' | xargs kill -9
@@ -191,8 +190,8 @@ function init(){
         if [[ $? -eq 0 ]]; then
             echo "$package install succeed" >> $basepath/script/result.log
             if [[ "$package" == "python" ]]; then
-                if `grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null` ; then
-                    if `nvidia-smi &>/dev/null`; then
+                if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
+                    if command -v nvidia-smi &>/dev/null; then
                         echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
                     else
                         echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
