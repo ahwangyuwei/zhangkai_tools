@@ -99,7 +99,6 @@ function install_gcc(){
 }
 
 function install_pyenv(){
-    mkdir -p $basepath/runtime/pyenv
     export PYENV_ROOT=$basepath/runtime/pyenv
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
