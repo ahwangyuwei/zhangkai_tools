@@ -103,7 +103,7 @@ function install_pyenv(){
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
-        echo "PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
+        echo "export PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
     fi
     source ~/.bashrc
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | sh
