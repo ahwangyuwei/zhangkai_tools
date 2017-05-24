@@ -123,15 +123,18 @@ function install_supervisor(){
     mkdir -p $basepath/runtime/supervisor/logs
     mkdir -p $basepath/runtime/supervisor/proc
     mkdir -p $basepath/runtime/supervisor/conf.d
-    
+ 
+    if ! grep supervisorctl ~/.bashrc &>/dev/null; then
+        echo "export SUPERVISOR_HOME=$basepath/runtime/supervisor" >> ~/.bashrc
+        echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.ini'" >> ~/.bashrc
+    fi
+    source ~/.bashrc
+
     pip install supervisor
 
-    cp $basepath/conf/supervisord.conf $basepath/runtime/supervisor/
+    cp $basepath/conf/supervisord.ini $basepath/runtime/supervisor/
     cd $basepath/runtime/supervisor
-    supervisord -c $basepath/runtime/supervisor/supervisord.conf
-    if ! grep supervisorctl ~/.bashrc &>/dev/null; then
-        echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.conf'" >> ~/.bashrc
-    fi
+    supervisord -c $basepath/runtime/supervisor/supervisord.ini
     #sudo chkconfig supervisord on
 }
 
