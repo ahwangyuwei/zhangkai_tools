@@ -113,7 +113,7 @@ function install_pyenv(){
     fi
     if command -v pyenv &>/dev/null; then
         source ~/.bashrc
-        CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 3.6.1
+        CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.13
         pyenv global 2.7.13
     fi
 }
