@@ -209,11 +209,11 @@ function init(){
             echo "$package install succeed" >> $basepath/script/result.log
             if [[ "$package" == "python" ]]; then
                 if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
-                    if command -v nvidia-smi &>/dev/null; then
-                        echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
-                    else
-                        echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
-                    fi
+                    #if command -v nvidia-smi &>/dev/null; then
+                    #    echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
+                    #else
+                    #    echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
+                    #fi
                     pip install --upgrade -r $basepath/script/requirements.txt
                     if [[ $? -eq 0 ]]; then
                         install_upload
