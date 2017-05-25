@@ -101,6 +101,7 @@ function install_gcc(){
 function install_pyenv(){
     export PYENV_ROOT=$basepath/runtime/pyenv
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
+        echo "export PYENV_ROOT=$basepath/runtime/pyenv" >> ~/.bashrc
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
         echo "export PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
