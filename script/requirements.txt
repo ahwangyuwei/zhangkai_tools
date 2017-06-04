@@ -1,10 +1,9 @@
 pip
 requests
 tornado
-ipython
+bpython
 beautifulsoup4
 html5lib
-Image
 lxml
 numpy
 prettytable

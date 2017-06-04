@@ -66,7 +66,7 @@ function install_redis(){
 }
 
 function install_mongo(){
-    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.3.tgz" -n mongodb-linux-x86_64-amazon-3.4.3
+    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.4.tgz" -n mongodb-linux-x86_64-amazon-3.4.4
     mkdir -p $optpath/bin $basepath/runtime/mongo
     cp -r bin/*  $optpath/bin
     cp $basepath/conf/mongod.conf $basepath/runtime/mongo/mongod.conf
