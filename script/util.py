@@ -7,18 +7,9 @@ sys.setdefaultencoding('utf-8')
 
 import logging
 import logging.handlers
-from email import encoders
-from email.mime.application import MIMEApplication
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.header import Header
-from email.utils import COMMASPACE, formatdate
-from mimetools import Message
 
 
-
-def Logger(filename=None, name=None, disable=False, level='DEBUG'):
+def Logger(filename=None, name=None, disable=False, level='INFO'):
     logger = logging.getLogger(name)
     from tornado.log import LogFormatter
     logger.setLevel(getattr(logging, level.upper()))
@@ -31,48 +22,6 @@ def Logger(filename=None, name=None, disable=False, level='DEBUG'):
         channel.setFormatter(LogFormatter(color=False))
         logger.addHandler(channel)
     return logger
-
-def mail(sender, receivers, title=None, content=None, files=None, **kwargs):
-    if not isinstance(receivers, list):
-        receivers = [receivers]
-    msg = MIMEMultipart()
-    if files:
-        if isinstance(files, (str, unicode)):
-            files = [files]
-        if isinstance(files, list):
-            tmp = {}
-            for filename in files:
-                if os.path.exists(filename):
-                    tmp[filename] = open(filename, 'rb').read()
-            files = tmp
-        for key, value in files.items():
-            part = MIMEText(value, 'base64', 'utf-8')
-            part['Content-Type'] = 'application/octet-stream'
-            part['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(key)
-            msg.attach(part)
-
-    if content:
-        part = MIMEText(content, 'html', 'utf-8')
-        msg.attach(part)
-
-    msg['from'] = sender
-    msg['to'] = COMMASPACE.join(receivers)
-    msg['date'] = formatdate(localtime=True)
-    msg['subject'] = title
-
-    if kwargs.get('cc'):
-        if not isinstance(kwargs['cc'], list):
-            kwargs['cc'] = [kwargs['cc']]
-        msg['cc'] = COMMASPACE.join(kwargs['cc'])
-
-    if kwargs.get('smtp') and kwargs.get('username') and kwargs.get('password'):
-        smtp = smtplib.SMTP()
-        smtp.connect(kwargs['smtp'])
-        smtp.login(kwargs['username'], kwargs['password'])
-    else:
-        smtp = smtplib.SMTP('localhost')
-    smtp.sendmail(sender, receivers, msg.as_string())
-    smtp.quit()
 
 
 class Dict(dict):
@@ -112,6 +61,7 @@ class Dict(dict):
             return False
         # except KeyError as k:
             # raise AttributeError, k
+
 
 class DefaultDict(Dict):
 

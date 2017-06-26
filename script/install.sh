@@ -27,6 +27,19 @@ function install_env(){
     test -e ~/.basrc && source ~/.bashrc
 }
 
+function init_server(){
+    if command -v yum &>/dev/null; then
+        sudo yum install htop mosh
+    elif command -v apt-get &>/dev/null; then
+        sudo apt-get install htop mosh
+    elif command -v brew &>/dev/null; then
+        brew install htop mosh
+    else
+        echo "package manager not found, exiting..."
+        return
+    fi
+}
+
 function download(){
     # filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
     url=$1
