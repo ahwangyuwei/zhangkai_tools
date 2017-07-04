@@ -4,8 +4,9 @@
 set -x
 basepath=$(cd `dirname $0`/..; pwd)
 cd $basepath
-mkdir -p opt tmp
+mkdir -p opt tmp runtime
 optpath=$(cd opt; pwd)
+runpath=$(cd runtime; pwd)
 
 # 修改环境变量
 function install_env(){
@@ -54,9 +55,11 @@ function download(){
             f) filename=$OPTARG;;
             n) name=$OPTARG;;
             d) decompress=$OPTARG;;
+            p) path=$OPTARG;;
             ?) echo "error";;
         esac
     done
+    [[ "$path" != "" ]] && cd $path
     if ! test -e $name; then
         if [[ "$url" =~ ^(http|ftp) ]]; then
             wget $url --no-check-certificate -O $filename
@@ -71,24 +74,24 @@ function download(){
 function install_redis(){
     download "http://download.redis.io/redis-stable.tar.gz"
     make -j10 && cp src/redis-server $optpath/bin && cp src/redis-cli $optpath/bin
-    mkdir -p $optpath/bin $basepath/runtime/redis
-    cp redis.conf $basepath/runtime/redis
-    sed -i 's/daemonize no/daemonize yes/g' $basepath/runtime/redis/redis.conf
-    cd $basepath/runtime/redis
-    $optpath/bin/redis-server $basepath/runtime/redis/redis.conf
+    mkdir -p $optpath/bin $runpath/redis
+    cp redis.conf $runpath/redis
+    sed -i 's/daemonize no/daemonize yes/g' $runpath/redis/redis.conf
+    cd $runpath/redis
+    $optpath/bin/redis-server $runpath/redis/redis.conf
 }
 
 function install_mongo(){
     download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.4.tgz" -n mongodb-linux-x86_64-amazon-3.4.4
-    mkdir -p $optpath/bin $basepath/runtime/mongo
+    mkdir -p $optpath/bin $runpath/mongo
     cp -r bin/*  $optpath/bin
-    cp $basepath/conf/mongod.conf $basepath/runtime/mongo/mongod.conf
-    cd $basepath/runtime/mongo
+    cp $basepath/conf/mongod.conf $runpath/mongo/mongod.conf
+    cd $runpath/mongo
     mkdir -p data logs
     if command -v numactl &>/dev/null; then
-        numactl --interleave=all $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
+        numactl --interleave=all $optpath/bin/mongod -f $runpath/mongo/mongod.conf
     else
-        $optpath/bin/mongod -f $basepath/runtime/mongo/mongod.conf
+        $optpath/bin/mongod -f $runpath/mongo/mongod.conf
     fi
 
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
@@ -106,15 +109,15 @@ function install_gcc(){
     ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
 
 #    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
-#    sudo rm /usr/lib64/libstdc++.so.6
+#    sudo mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.bak
 #    sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
 #    sudo ldconfig
 }
 
 function install_pyenv(){
-    export PYENV_ROOT=$basepath/runtime/pyenv
+    export PYENV_ROOT=$runpath/pyenv
     if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
-        echo "export PYENV_ROOT=$basepath/runtime/pyenv" >> ~/.bashrc
+        echo "export PYENV_ROOT=$runpath/pyenv" >> ~/.bashrc
         echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
         echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
         echo "export PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
@@ -133,21 +136,21 @@ function install_pyenv(){
 }
 
 function install_supervisor(){
-    mkdir -p $basepath/runtime/supervisor/logs
-    mkdir -p $basepath/runtime/supervisor/proc
-    mkdir -p $basepath/runtime/supervisor/conf.d
+    mkdir -p $runpath/supervisor/logs
+    mkdir -p $runpath/supervisor/proc
+    mkdir -p $runpath/supervisor/conf.d
  
     if ! grep supervisorctl ~/.bashrc &>/dev/null; then
-        echo "export SUPERVISOR_HOME=$basepath/runtime/supervisor" >> ~/.bashrc
-        echo "alias supervisorctl='supervisorctl -c $basepath/runtime/supervisor/supervisord.ini'" >> ~/.bashrc
+        echo "export SUPERVISOR_HOME=$runpath/supervisor" >> ~/.bashrc
+        echo "alias supervisorctl='supervisorctl -c $runpath/supervisor/supervisord.ini'" >> ~/.bashrc
     fi
     source ~/.bashrc
 
     pip install supervisor
 
-    cp $basepath/conf/supervisord.ini $basepath/runtime/supervisor/
-    cd $basepath/runtime/supervisor
-    supervisord -c $basepath/runtime/supervisor/supervisord.ini
+    cp $basepath/conf/supervisord.ini $runpath/supervisor/
+    cd $runpath/supervisor
+    supervisord -c $runpath/supervisor/supervisord.ini
     #sudo chkconfig supervisord on
 }
 
@@ -203,20 +206,30 @@ function init(){
         cd $basepath/tmp
         if [[ "$sections" =~ $package ]]; then
             url=`readini $package url $config`
-            command=`readini $package command $config`
-            if [[ "$command" == "" ]]; then
-                command="./configure --prefix=$optpath && make -j10 && make install"
-            fi
+            cmd=`readini $package command $config`
             name=`readini $package name $config`
-            if [[ "$name" == "" ]]; then
-                download "$url"
-            else
-                download "$url" -n "$name"
+            binary=`readini $package binary $config`
+
+            if [[ "$command" == "" ]]; then
+                cmd="./configure --prefix=$optpath && make -j10 && make install"
             fi
+
+            download_cmd="download \"$url\""
+            if [[ "$name" != "" ]]; then
+                download_cmd="$download_cmd -n \"$name\""
+            fi
+            if [[ "$binary" == "true" ]]; then
+                download_cmd="$download_cmd -p \"$runpath\""
+            fi
+            eval "$download_cmd"
+            if [[ "$binary" == "true" ]]; then
+                continue
+            fi
+            
         else
-            command=install_$package
+            cmd=install_$package
         fi
-        set -o pipefail; eval "$command" | tee -a $basepath/script/logs/${package}.log
+        set -o pipefail; eval "$cmd" | tee -a $basepath/script/logs/${package}.log
 
         if [[ $? -eq 0 ]]; then
             echo "$package install succeed" >> $basepath/script/result.log
