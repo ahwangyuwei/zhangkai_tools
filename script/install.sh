@@ -62,7 +62,11 @@ function download(){
     [[ "$path" != "" ]] && cd $path
     if ! test -e $name; then
         if [[ "$url" =~ ^(http|ftp) ]]; then
-            wget $url --no-check-certificate -O $filename
+            if command -v axel; then
+                axel -n20 $url -o $filename
+            else
+                wget $url --no-check-certificate -O $filename
+            fi
             $decompress $filename
         else
             eval "$url"
