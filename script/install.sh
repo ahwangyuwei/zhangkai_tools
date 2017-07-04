@@ -49,7 +49,7 @@ function download(){
     [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] && name=${name%.*}
     [[ "$filename" =~ (zip)$ ]] && decompress="unzip" || decompress="tar xf"
     shift 1
-    while getopts ":f:n:d:" opt
+    while getopts ":f:n:d:p:" opt
     do
         case $opt in
             f) filename=$OPTARG;;
@@ -67,7 +67,12 @@ function download(){
             else
                 wget $url --no-check-certificate -O $filename
             fi
-            $decompress $filename
+            if [ $? -eq 0 ]; then
+                files=`ls`
+                $decompress $filename
+                new_files=`ls`
+                name=`echo -e "$new_files\n$files" | sort | uniq -u`
+            fi
         else
             eval "$url"
         fi
