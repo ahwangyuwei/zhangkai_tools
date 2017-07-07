@@ -25,7 +25,7 @@ function install_env(){
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bashrc
         echo "export LC_ALL=C" >> ~/.bashrc
     fi
-    test -e ~/.basrc && source ~/.bashrc
+    test -e ~/.bashrc && source ~/.bashrc
 }
 
 function init_server(){
@@ -42,25 +42,27 @@ function init_server(){
 }
 
 function download(){
-    # filename是.tar.gz 或.tar.bz2 或.tar.xz，2次移除.* 所匹配的最右边的内容
     url=$1
-    filename=`basename "$url"`
-    name=${filename%.*}
-    [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] && name=${name%.*}
-    [[ "$filename" =~ (zip)$ ]] && decompress="unzip" || decompress="tar xf"
+
     shift 1
-    while getopts ":f:n:d:p:" opt
+    while getopts ":f:d:p:" opt
     do
         case $opt in
             f) filename=$OPTARG;;
-            n) name=$OPTARG;;
             d) decompress=$OPTARG;;
             p) path=$OPTARG;;
             ?) echo "error";;
         esac
     done
+
     [[ "$path" != "" ]] && cd $path
-    if ! test -e $name; then
+
+    filename=`basename "$url"`
+    dirname=${filename%.*}
+    [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] && dirname=${dirname%.*}
+
+
+    if ! test -e $filename; then
         if [[ "$url" =~ ^(http|ftp) ]]; then
             if command -v axel; then
                 axel -n20 $url -o $filename
@@ -69,15 +71,26 @@ function download(){
             fi
             if [ $? -eq 0 ]; then
                 files=`ls`
-                $decompress $filename
+                if [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] || `file -i $filename | egrep 'gzip|bzip2|xz' &>/dev/null`; then
+                    tar xf $filename
+                elif [[ "$filename" =~ (zip)$ ]] || `file -i $filename | egrep "zip" &>/dev/null`; then
+                    unzip $filename
+                else
+                    echo "unknown file format!!!"
+                    return 1
+                fi
+
                 new_files=`ls`
-                name=`echo -e "$new_files\n$files" | sort | uniq -u`
+                dirname=`echo -e "$new_files\n$files" | sort | uniq -u`
             fi
         else
+            files=`ls`
             eval "$url"
+            new_files=`ls`
+            dirname=`echo -e "$new_files\n$files" | sort | uniq -u`
         fi
     fi
-    cd $name
+    cd $dirname
 }
 
 function install_redis(){
@@ -91,7 +104,7 @@ function install_redis(){
 }
 
 function install_mongo(){
-    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.4.tgz" -n mongodb-linux-x86_64-amazon-3.4.4
+    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.6.tgz" -n mongodb-linux-x86_64-amazon-3.4.6
     mkdir -p $optpath/bin $runpath/mongo
     cp -r bin/*  $optpath/bin
     cp $basepath/conf/mongod.conf $runpath/mongo/mongod.conf
@@ -148,7 +161,7 @@ function install_supervisor(){
     mkdir -p $runpath/supervisor/logs
     mkdir -p $runpath/supervisor/proc
     mkdir -p $runpath/supervisor/conf.d
- 
+
     if ! grep supervisorctl ~/.bashrc &>/dev/null; then
         echo "export SUPERVISOR_HOME=$runpath/supervisor" >> ~/.bashrc
         echo "alias supervisorctl='supervisorctl -c $runpath/supervisor/supervisord.ini'" >> ~/.bashrc
@@ -173,10 +186,10 @@ function install_download(){
 }
 
 function install_upload(){
-    mkdir -p $basepath/upload
     cd $basepath/upload
+    mkdir -p data logs
     ps -ef | grep upload.py | grep -v "grep" | grep "port=7000" | awk '{print $2}' | xargs kill -9
-    nohup python $basepath/script/upload.py -port=7000 -log_file_prefix=$basepath/script/logs/upload.log &>/dev/null &
+    nohup python $basepath/upload/upload.py -port=7000 -log_file_prefix=$basepath/upload/logs/upload.log &>/dev/null &
 }
 
 function show_info(){
@@ -216,7 +229,6 @@ function init(){
         if [[ "$sections" =~ $package ]]; then
             url=`readini $package url $config`
             cmd=`readini $package command $config`
-            name=`readini $package name $config`
             binary=`readini $package binary $config`
 
             if [[ "$command" == "" ]]; then
@@ -224,9 +236,6 @@ function init(){
             fi
 
             download_cmd="download \"$url\""
-            if [[ "$name" != "" ]]; then
-                download_cmd="$download_cmd -n \"$name\""
-            fi
             if [[ "$binary" == "true" ]]; then
                 download_cmd="$download_cmd -p \"$runpath\""
             fi
@@ -234,7 +243,7 @@ function init(){
             if [[ "$binary" == "true" ]]; then
                 continue
             fi
-            
+
         else
             cmd=install_$package
         fi
@@ -245,9 +254,9 @@ function init(){
             if [[ "$package" == "python" ]]; then
                 if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
                     #if command -v nvidia-smi &>/dev/null; then
-                    #    echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
+                    #    echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.2.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
                     #else
-                    #    echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.0.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
+                    #    echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.2.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
                     #fi
                     pip install --upgrade -r $basepath/script/requirements.txt
                     if [[ $? -eq 0 ]]; then
@@ -265,4 +274,7 @@ function init(){
     done
 }
 
-init $@
+#init $@
+
+download https://iterm2.com/downloads/stable/latest
+

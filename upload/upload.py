@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 import os
 import re
 import shutil
@@ -20,7 +16,7 @@ import tornado.web
 from tornado.options import define, options
 define("port", default=7000, help="run on the given port", type=int)
 define("dev",  default=True, help="dev mode", type=bool)
-define("path", default=".", help="video cp data upload server path", type=str)
+define("path", default="data", help="upload server path", type=str)
 
 
 class BaseHandler(tornado.web.RequestHandler):

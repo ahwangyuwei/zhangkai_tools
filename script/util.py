@@ -1,30 +1,91 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
+import json
+import time
 import logging
 import logging.handlers
+from tornado.log import LogFormatter
 
 
-def Logger(filename=None, name=None, disable=False, level='INFO'):
-    logger = logging.getLogger(name)
-    from tornado.log import LogFormatter
-    logger.setLevel(getattr(logging, level.upper()))
-    if not any(map(lambda x: isinstance(x, logging.StreamHandler), logger.handlers)):
-        channel = logging.StreamHandler()
-        channel.setFormatter(LogFormatter())
-        logger.addHandler(channel)
-    if filename:
-        channel = logging.handlers.WatchedFileHandler(filename=filename, mode='a', encoding='utf-8', delay=True)
-        channel.setFormatter(LogFormatter(color=False))
-        logger.addHandler(channel)
-    return logger
+def str2int(str_time):
+    return int(time.mktime(time.strptime(str_time, "%Y-%m-%d %H:%M:%S")))
+
+
+def int2str(int_time):
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int_time))
+
+
+class Logger(logging.Logger):
+
+    def __init__(self, filename=None, name='root', level='INFO', stream=True):
+        level = getattr(logging, level.upper())
+        super(Logger, self).__init__(name, level)
+        if stream:
+            hdlr = logging.StreamHandler()
+            hdlr.setFormatter(LogFormatter())
+            self.addHandler(hdlr)
+
+        if filename:
+            hdlr = logging.handlers.WatchedFileHandler(filename=filename, mode='a', encoding='utf-8')
+            hdlr.setFormatter(LogFormatter(color=False))
+            self.addHandler(hdlr)
+
+
+class JSONDecoder(json.decoder.JSONDecoder):
+    '''使用json.loads时默认的key和value都是unicode类型
+    如果某些地方的key和value必须使用utf-8格式
+    则可使用json.loads(data, cls=JSONDecoder)
+    '''
+
+    def __init__(self, **kwargs):
+        kwargs['object_hook'] = self.__decode_dict
+        super(JSONDecoder, self).__init__(**kwargs)
+
+    def _decode_list(self, data):
+        rv = []
+        for item in data:
+            if isinstance(item, unicode):
+                item = item.encode('utf-8')
+            elif isinstance(item, list):
+                item = self._decode_list(item)
+            elif isinstance(item, dict):
+                item = self.__decode_dict(item)
+            rv.append(item)
+        return rv
+
+    def __decode_dict(self, data):
+        rv = {}
+        for key, value in data.iteritems():
+            if isinstance(key, unicode):
+                key = key.encode('utf8')
+            if isinstance(value, unicode):
+                value = value.encode('utf8')
+            elif isinstance(value, list):
+                value = self._decode_list(value)
+            elif isinstance(value, dict):
+                value = self.__decode_dict(value)
+            rv[key] = value
+        return rv
+
+
+class JSONEncoder(json.encoder.JSONEncoder):
+    '''针对某些不能序列化的类型如datetime
+    使用json.dumps(data, cls=JSONEncoder)
+    '''
+
+    def default(self, obj):
+        if isinstance(obj, (datetime.datetime, datetime.date, bson.ObjectId)):
+            return str(obj)
+        elif isinstance(obj, set):
+            return list(obj)
+        else:
+            return super(JSONEncoder, self).default(obj)
 
 
 class Dict(dict):
+    '''将字段改为通过属性访问
+    '''
 
     def __init__(self, *args, **kwargs):
         super(Dict, self).__init__(*args, **kwargs)
@@ -64,6 +125,8 @@ class Dict(dict):
 
 
 class DefaultDict(Dict):
+    '''类似connections.defaultdict
+    '''
 
     def __init__(self, default_factory=None, *args, **kwargs):
         if default_factory is not None and not hasattr(default_factory, '__call__'):
