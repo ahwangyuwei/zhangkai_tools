@@ -8,59 +8,81 @@ mkdir -p opt tmp runtime
 optpath=$(cd opt; pwd)
 runpath=$(cd runtime; pwd)
 
-# 修改环境变量
+shell="$(ps c -p "$PPID" -o 'ucomm=' 2>/dev/null || true)"
+shell="${shell##-}"
+shell="${shell%% *}"
+shell="$(basename "${shell:-$SHELL}")"
+
+case "$shell" in
+    bash ) profile="~/.bashrc" ;;
+    zsh ) profile="~/.zshrc" ;;
+    ksh ) profile="~/.profile" ;;
+    fish ) profile="~/.config/fish/config.fish" ;;
+    * ) echo "please define your profile !!!"; exit 1 ;;
+esac
+
 function install_env(){
-    if ! grep C_INCLUDE_PATH ~/.bashrc &>/dev/null; then
-        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> ~/.bashrc
-        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> ~/.bashrc
+    if ! grep C_INCLUDE_PATH $profile &>/dev/null; then
+        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> $profile
+        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> $profile
         # 动态链接库路径
-        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> ~/.bashrc
+        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> $profile
         # 静态链接库路径
-        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> ~/.bashrc
+        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> $profile
         # gcc 头文件路径
-        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> ~/.bashrc
+        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> $profile
         # g++ 头文件路径
-        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> ~/.bashrc
+        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> $profile
         # pkgconfig 路径
-        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bashrc
-        echo "export LC_ALL=C" >> ~/.bashrc
+        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> $profile
+        echo "export LC_ALL=C" >> $profile
+        source $profile
     fi
-    test -e ~/.bashrc && source ~/.bashrc
 }
 
-function init_server(){
-    if command -v yum &>/dev/null; then
-        sudo yum install htop mosh
-    elif command -v apt-get &>/dev/null; then
-        sudo apt-get install htop mosh
-    elif command -v brew &>/dev/null; then
-        brew install htop mosh
-    else
-        echo "package manager not found, exiting..."
-        return
-    fi
+function install_zsh(){
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+    sed -i s'/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/g' ~/.zshrc
+}
+
+function install_mac(){
+    # 安装Xcode Command Line Tools
+    xcode-select --install
+
+    # 安装brew
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew install wget axel ctags jq vim mosh htop
+
+    # 安装zsh
+    install_zsh
+    brew install zsh-syntax-highlighting
+    echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $profile
+
+    cd $basepath/tmp
+
+    download https://iterm2.com/downloads/stable/latest -p /Applications
+    download https://atom.io/download/mac -p /Applications
+
+    axel -n20 http://zipzapmac.com/download/Go2Shell
+    axel -n20 https://www.charlesproxy.com/assets/release/4.1.3/charles-proxy-4.1.3.dmg
+
 }
 
 function download(){
     url=$1
-
-    shift 1
-    while getopts ":f:d:p:" opt
-    do
-        case $opt in
-            f) filename=$OPTARG;;
-            d) decompress=$OPTARG;;
-            p) path=$OPTARG;;
-            ?) echo "error";;
-        esac
-    done
-
-    [[ "$path" != "" ]] && cd $path
-
     filename=`basename "$url"`
     dirname=${filename%.*}
     [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] && dirname=${dirname%.*}
 
+    shift 1
+    while getopts ":f:p:" opt
+    do
+        case $opt in
+            f) filename=$OPTARG;;
+            p) path=$OPTARG;;
+            ?) echo "wrong parameter $opt";;
+        esac
+    done
 
     if ! test -e $filename; then
         if [[ "$url" =~ ^(http|ftp) ]]; then
@@ -71,12 +93,12 @@ function download(){
             fi
             if [ $? -eq 0 ]; then
                 files=`ls`
-                if [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] || `file -i $filename | egrep 'gzip|bzip2|xz' &>/dev/null`; then
+                if [[ "$filename" =~ (tar.gz|tar.bz2|tar.xz)$ ]] || `file -i $filename | egrep 'x-gzip|x-bzip2|x-xz' &>/dev/null`; then
                     tar xf $filename
                 elif [[ "$filename" =~ (zip)$ ]] || `file -i $filename | egrep "zip" &>/dev/null`; then
                     unzip $filename
                 else
-                    echo "unknown file format!!!"
+                    echo "unknown file format"
                     return 1
                 fi
 
@@ -90,13 +112,21 @@ function download(){
             dirname=`echo -e "$new_files\n$files" | sort | uniq -u`
         fi
     fi
-    cd $dirname
+
+    if [[ "$path" == "" ]]; then
+        cd $dirname
+    else
+        mkdir -p $path
+        mv $dirname $path
+        cd $path/$dirname
+    fi
+
 }
 
 function install_redis(){
     download "http://download.redis.io/redis-stable.tar.gz"
-    make -j10 && cp src/redis-server $optpath/bin && cp src/redis-cli $optpath/bin
     mkdir -p $optpath/bin $runpath/redis
+    make -j10 && cp src/redis-server src/redis-cli $optpath/bin
     cp redis.conf $runpath/redis
     sed -i 's/daemonize no/daemonize yes/g' $runpath/redis/redis.conf
     cd $runpath/redis
@@ -104,7 +134,7 @@ function install_redis(){
 }
 
 function install_mongo(){
-    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.6.tgz" -n mongodb-linux-x86_64-amazon-3.4.6
+    download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.6.tgz"
     mkdir -p $optpath/bin $runpath/mongo
     cp -r bin/*  $optpath/bin
     cp $basepath/conf/mongod.conf $runpath/mongo/mongod.conf
@@ -138,22 +168,23 @@ function install_gcc(){
 
 function install_pyenv(){
     export PYENV_ROOT=$runpath/pyenv
-    if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT ~/.bashrc &>/dev/null; then
-        echo "export PYENV_ROOT=$runpath/pyenv" >> ~/.bashrc
-        echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> ~/.bashrc
-        echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> ~/.bashrc
-        echo "export PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> ~/.bashrc
+    if ! grep PYENV_VIRTUALENV_DISABLE_PROMPT $profile &>/dev/null; then
+        echo "export PYENV_ROOT=$runpath/pyenv" >> $profile
+        echo "export PATH=$PYENV_ROOT/bin:\$PATH" >> $profile
+        echo "export PYENV_VIRTUALENV_DISABLE_PROMPT=1" >> $profile
+        echo "export PYTHON_CONFIGURE_OPTS=\"--enable-shared\"" >> $profile
     fi
-    source ~/.bashrc
+    source $profile
     curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | sh
-    if ! grep "virtualenv-init" ~/.bashrc &>/dev/null; then
-        echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
-        echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
+    if ! grep "virtualenv-init" $profile &>/dev/null; then
+        echo "eval \"\$(pyenv init -)\"" >> $profile
+        echo "eval \"\$(pyenv virtualenv-init -)\"" >> $profile
     fi
     if command -v pyenv &>/dev/null; then
-        source ~/.bashrc
+        source $profile
         CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.13
         pyenv global 2.7.13
+        pyenv virtualenv 2.7.13 py2
     fi
 }
 
@@ -162,11 +193,11 @@ function install_supervisor(){
     mkdir -p $runpath/supervisor/proc
     mkdir -p $runpath/supervisor/conf.d
 
-    if ! grep supervisorctl ~/.bashrc &>/dev/null; then
-        echo "export SUPERVISOR_HOME=$runpath/supervisor" >> ~/.bashrc
-        echo "alias supervisorctl='supervisorctl -c $runpath/supervisor/supervisord.ini'" >> ~/.bashrc
+    if ! grep supervisorctl $profile &>/dev/null; then
+        echo "export SUPERVISOR_HOME=$runpath/supervisor" >> $profile
+        echo "alias supervisorctl='supervisorctl -c $runpath/supervisor/supervisord.ini'" >> $profile
     fi
-    source ~/.bashrc
+    source $profile
 
     pip install supervisor
 
@@ -177,8 +208,8 @@ function install_supervisor(){
 }
 
 function install_download(){
-    mkdir -p $basepath/upload
-    download_path="${basepath//\//\/}\/upload"
+    mkdir -p $basepath/upload/data
+    download_path="${basepath//\//\/}\/upload\/data"
     cp $basepath/conf/nginx.conf $optpath/conf/nginx.conf
     sed -i "s/download_path/$download_path/g" $optpath/conf/nginx.conf
     ps -ef | grep $USER | grep -v grep | grep nginx | awk '{print $2}' | xargs kill -9
@@ -189,7 +220,7 @@ function install_upload(){
     cd $basepath/upload
     mkdir -p data logs
     ps -ef | grep upload.py | grep -v "grep" | grep "port=7000" | awk '{print $2}' | xargs kill -9
-    nohup python $basepath/upload/upload.py -port=7000 -log_file_prefix=$basepath/upload/logs/upload.log &>/dev/null &
+    nohup python $basepath/upload/upload.py -port=7000 -log_file_prefix=logs/upload.log &>/dev/null &
 }
 
 function show_info(){
@@ -239,7 +270,8 @@ function init(){
             if [[ "$binary" == "true" ]]; then
                 download_cmd="$download_cmd -p \"$runpath\""
             fi
-            eval "$download_cmd"
+            $download_cmd
+
             if [[ "$binary" == "true" ]]; then
                 continue
             fi
@@ -253,11 +285,6 @@ function init(){
             echo "$package install succeed" >> $basepath/script/result.log
             if [[ "$package" == "python" ]]; then
                 if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
-                    #if command -v nvidia-smi &>/dev/null; then
-                    #    echo "https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.2.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
-                    #else
-                    #    echo "https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.2.1-cp27-none-linux_x86_64.whl" >> $basepath/script/requirements.txt
-                    #fi
                     pip install --upgrade -r $basepath/script/requirements.txt
                     if [[ $? -eq 0 ]]; then
                         install_upload
@@ -274,7 +301,5 @@ function init(){
     done
 }
 
-#init $@
-
-download https://iterm2.com/downloads/stable/latest
+init $@
 
