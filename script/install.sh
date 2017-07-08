@@ -36,6 +36,8 @@ function install_env(){
         # pkgconfig 路径
         echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> $profile
         echo "export LC_ALL=C" >> $profile
+        echo "export LANG=en_US.UTF-8" >> $profile
+        echo "export EDITOR=vim" >> $profile
         source $profile
     fi
 }
@@ -137,13 +139,13 @@ function install_mongo(){
     download "http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-amazon-3.4.6.tgz"
     mkdir -p $optpath/bin $runpath/mongo
     cp -r bin/*  $optpath/bin
-    cp $basepath/conf/mongod.conf $runpath/mongo/mongod.conf
+    cp $basepath/conf/mongod.yaml $runpath/mongo/mongod.yaml
     cd $runpath/mongo
     mkdir -p data logs
     if command -v numactl &>/dev/null; then
-        numactl --interleave=all $optpath/bin/mongod -f $runpath/mongo/mongod.conf
+        numactl --interleave=all $optpath/bin/mongod -f $runpath/mongo/mongod.yaml
     else
-        $optpath/bin/mongod -f $runpath/mongo/mongod.conf
+        $optpath/bin/mongod -f $runpath/mongo/mongod.yaml
     fi
 
 #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled

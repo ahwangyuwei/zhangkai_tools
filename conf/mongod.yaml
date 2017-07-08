@@ -49,7 +49,7 @@ operationProfiling:
 
 # 复制集相关参数
 replication:
-  oplogSizeMB: 10240
+  oplogSizeMB: 20480
   replSetName: rs0
   enableMajorityReadConcern: false
 
