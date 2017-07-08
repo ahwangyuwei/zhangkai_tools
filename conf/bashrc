@@ -1,0 +1,29 @@
+alias server="nc -v -l 23456 | tar -xvf -"
+function client(){
+    [ $# -eq 3 ] && port=$3 || port=23456
+    [ $# -eq 2 ] && ip=$2 || ip=10.2.1.233
+    tar -cvf - $1 |  nc -v $ip $port
+}
+
+function hadoopjob(){
+   [[ $# -eq 2 ]] && name=$2 || name=$USER
+    yarn application -list 2>/dev/null | grep $name | awk '{print $1}' | xargs -n1 -t -i yarn application -$1 {} 2>/dev/null
+}
+alias ys="hadoopjob status"
+alias yk="hadoopjob kill"
+alias ylog="yarn logs -applicationId"
+
+alias hls="hadoop fs -ls "
+alias hmv="hadoop fs -mv"
+alias hcp="hadoop fs -cp"
+alias hrmr="hadoop fs -rmr"
+alias hrm="hadoop fs -rm -r"
+alias hget="hadoop fs -get"
+alias hput="hadoop fs -put"
+alias hmkdir="hadoop fs -mkdir"
+alias hcat="hadoop fs -cat"
+alias hcount="hadoop fs -count"
+alias hdu="hadoop fs -du -s -h"
+alias hchmod="hadoop fs -chmod"
+alias htext="hadoop fs -text"
+alias hmerge="hadoop fs -getmerge"

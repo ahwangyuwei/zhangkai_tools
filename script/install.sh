@@ -21,68 +21,6 @@ case "$shell" in
     * ) echo "please set your profile !!!"; exit 1 ;;
 esac
 
-function install_env(){
-    if ! grep C_INCLUDE_PATH $profile &>/dev/null; then
-        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> $profile
-        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> $profile
-        # 动态链接库路径
-        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> $profile
-        # 静态链接库路径
-        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> $profile
-        # gcc 头文件路径
-        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> $profile
-        # g++ 头文件路径
-        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> $profile
-        # pkgconfig 路径
-        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> $profile
-        echo "export LC_ALL=C" >> $profile
-        echo "export LANG=en_US.UTF-8" >> $profile
-        echo "export EDITOR=vim" >> $profile
-        source $profile
-    fi
-}
-
-function install_conf(){
-    mkdir -p ~/.pip ~/.m2
-    cp $basepath/conf/pip/pip.conf ~/.pip
-    cp $basepath/conf/m2/settings.xml ~/.m2
-    if ! grep cnpm $profile &>/dev/null; then
-    echo 'alias cnpm="npm --registry=https://registry.npm.taobao.org \
-          --cache=$HOME/.npm/.cache/cnpm \
-          --disturl=https://npm.taobao.org/dist \
-          --userconfig=$HOME/.cnpmrc"' >> $profile 
-    fi
-
-}
-
-function install_zsh(){
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-    sed -i s'/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/g' ~/.zshrc
-}
-
-function install_mac(){
-    # 安装Xcode Command Line Tools
-    xcode-select --install
-
-    # 安装brew
-    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    brew install wget axel ctags jq vim mosh htop
-
-    # 安装zsh
-    install_zsh
-    brew install zsh-syntax-highlighting
-    echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $profile
-
-    cd $basepath/tmp
-
-    download https://iterm2.com/downloads/stable/latest -p /Applications
-    download https://atom.io/download/mac -p /Applications
-
-    axel -n20 http://zipzapmac.com/download/Go2Shell
-    axel -n20 https://www.charlesproxy.com/assets/release/4.1.3/charles-proxy-4.1.3.dmg
-
-}
-
 function download(){
     url=$1
     filename=`basename "$url"`
@@ -135,7 +73,123 @@ function download(){
         mv $dirname $path
         cd $path/$dirname
     fi
+}
 
+function install_env(){
+    if ! grep C_INCLUDE_PATH $profile &>/dev/null; then
+        echo "export PYTHONPATH=$basepath/script:\$PYTHONPATH" >> $profile
+        echo "export PATH=$optpath/bin:$optpath/sbin:\$PATH" >> $profile
+        # 动态链接库路径
+        echo "export LD_LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LD_LIBRARY_PATH" >> $profile
+        # 静态链接库路径
+        echo "export LIBRARY_PATH=$optpath/lib64:$optpath/lib:\$LIBRARY_PATH" >> $profile
+        # gcc 头文件路径
+        echo "export C_INCLUDE_PATH=$optpath/include:\$C_INCLUDE_PATH" >> $profile
+        # g++ 头文件路径
+        echo "export CPLUS_INCLUDE_PATH=$optpath/include:\$CPLUS_INCLUDE_PATH" >> $profile
+        # pkgconfig 路径
+        echo "export PKG_CONFIG_PATH=$optpath/lib/pkgconfig:\$PKG_CONFIG_PATH" >> $profile
+        echo "export LC_ALL=en_US.UTF-8" >> $profile
+        echo "export LANG=en_US.UTF-8" >> $profile
+        echo "export EDITOR=vim" >> $profile
+        source $profile
+    fi
+}
+
+function install_conf(){
+    mkdir -p ~/.pip ~/.m2
+    cp $basepath/conf/pip/pip.conf ~/.pip
+    cp $basepath/conf/m2/settings.xml ~/.m2
+    cp $basepath/conf/npmrc ~/.npmrc
+
+}
+
+function install_zsh(){
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+    sed -i s'/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/g' ~/.zshrc
+}
+
+function install_mac(){
+    # 安装Xcode Command Line Tools
+    xcode-select --install
+
+    # 安装brew
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew install wget axel ctags jq vim mosh htop
+
+    # 安装zsh
+    install_zsh
+    brew install zsh-syntax-highlighting
+    echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $profile
+
+    cd $basepath/tmp
+
+    download https://iterm2.com/downloads/stable/latest -p /Applications
+    download https://atom.io/download/mac -p /Applications
+
+    axel -n20 http://zipzapmac.com/download/Go2Shell
+    axel -n20 https://www.charlesproxy.com/assets/release/4.1.3/charles-proxy-4.1.3.dmg
+
+}
+
+function install_jdk(){
+    download https://coding.net/u/zkdfbb/p/package/git/raw/master/jdk-8u131-linux-x64.tar.gz -p $runpath
+
+    if ! grep JAVA_HOME $profile &>/dev/null; then
+        echo "
+export JAVA_HOME=`pwd`
+export JRE_HOME=\$JAVA_HOME/jre
+export CLASSPATH=\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar:\$JRE_HOME/lib
+export PATH=\$JAVA_HOME/bin:\$JRE_HOME/bin:\$PATH" >> $profile
+    fi
+
+}
+
+function install_hadoop(){
+    download http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-2.8.0/hadoop-2.8.0.tar.gz -p $runpath
+    
+    if ! grep HADOOP_HOME $profile &>/dev/null; then
+        echo "
+export HADOOP_HOME=`pwd` >> $profile
+export HADOOP_CONF_DIR=\$HADOOP_HOME/conf
+export YARN_HOME=\$HADOOP_HOME
+export YARN_CONF_DIR=\$HADOOP_CONF_DIR
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$HADOOP_HOME/lib/native
+export PATH=\$HADOOP_HOME/bin:\$PATH" >> $profile
+    fi
+}
+
+function install_pig(){
+    download https://mirrors.tuna.tsinghua.edu.cn/apache/pig/pig-0.17.0/pig-0.17.0.tar.gz -p $runpath
+
+    if ! grep PIG_HOME $profile &>/dev/null; then
+        echo "
+export PIG_HOME=`pwd`
+export PIG_CLASSPATH=\$HADOOP_CONF_DIR
+export PATH=\$PIG_HOME/bin:\$PATH" >> $profile
+    fi
+}
+
+function install_spark(){
+    download https://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.1.1/spark-2.1.1-bin-hadoop2.7.tgz -p $runpath
+    echo "
+export SPARK_HOME=`pwd`
+export SPARK_LIBRARY_PATH=\$SPARK_HOME/classpath/emr/*:\$SPARK_HOME/classpath/emrfs/*:\$SPARK_HOME/lib/*\$
+export PATH=\$SPARK_HOME/bin:\$PATH" >> $profile
+}
+
+function install_hbase(){
+    download http://archive.apache.org/dist/hbase/0.98.24/hbase-0.98.24-hadoop2-bin.tar.gz -p $runpath
+    echo "
+export HBASE_HOME=`pwd`
+export PIG_CLASSPATH=\`\$HBASE_HOME/bin/hbase classpath\`:\$PIG_CLASSPATH
+export HADOOP_CLASSPATH=\`\$HBASE_HOME/bin/hbase classpath\`:\$HADOOP_CLASSPATH
+export PATH=\$HBASE_HOME/bin:\$PATH" >> $profile
+}
+
+function install_maven(){
+    download http://archive.apache.org/dist/maven/maven-3/3.5.0/binaries/apache-maven-3.5.0-bin.tar.gz -p $runpath
+    echo "export PATH=`pwd`/bin:\$PATH" >> $profile
 }
 
 function install_redis(){
@@ -161,8 +215,8 @@ function install_mongo(){
         $optpath/bin/mongod -f $runpath/mongo/mongod.yaml
     fi
 
-#    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
-#    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
+    #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
+    #    sudo echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
 }
 
 function install_gcc(){
@@ -175,10 +229,10 @@ function install_gcc(){
     mkdir -p gcc-build && cd gcc-build
     ../configure --prefix=$optpath --enable-checking=release --enable-languages=c,c++ --disable-multilib && make -j10 && make install
 
-#    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
-#    sudo mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.bak
-#    sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
-#    sudo ldconfig
+    #    sudo cp x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib64/
+    #    sudo mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.bak
+    #    sudo ln -s /usr/lib64/libstdc++.so.6.0.21 /usr/lib64/libstdc++.so.6
+    #    sudo ldconfig
 }
 
 function install_pyenv(){
@@ -259,7 +313,7 @@ function readini(){
     keys=`sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' '{ print $1 }' | tr -t '\n' ' '`
     if [[ "$keys" =~ $KEY ]]; then
         sed -n '/\['$SECTION'\]/,/\[/p'  $CONFIG | egrep -v '\[|\]|^\s*$' | awk -F '=' -v key=$KEY '{ value=""; for(i=2;i<=NF;i++) value=value""$i"="; gsub(/^ *| *$/, "", $1); gsub(/^ *|[= ]*$/, "", value); if($1==key) print value}'
-	fi
+    fi
 }
 
 function init(){
