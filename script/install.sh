@@ -275,7 +275,9 @@ function init(){
     for package in $packages
     do
         cd $basepath/tmp
-        if [[ "$sections" =~ $package ]]; then
+        if command -v install_$package &>/dev/null; then
+            cmd=install_$package
+        elif [[ "$sections" =~ $package ]]; then
             url=`readini $package url $config`
             cmd=`readini $package command $config`
             binary=`readini $package binary $config`
@@ -293,9 +295,9 @@ function init(){
             if [[ "$binary" == "true" ]]; then
                 continue
             fi
-
         else
-            cmd=install_$package
+            echo "$package configure is not found !!!"
+            continue
         fi
         set -o pipefail; eval "$cmd" | tee -a $basepath/script/logs/${package}.log
 
