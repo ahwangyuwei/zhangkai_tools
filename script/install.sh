@@ -14,10 +14,10 @@ shell="${shell%% *}"
 shell="$(basename "${shell:-$SHELL}")"
 
 case "$shell" in
-    bash ) profile="/home/$USER/.bashrc" ;;
-    zsh ) profile="/home/$USER/.zshrc" ;;
-    ksh ) profile="/home/$USER/.profile" ;;
-    fish ) profile="/home/$USER/.config/fish/config.fish" ;;
+    bash ) profile="$HOME/.bashrc" ;;
+    zsh ) profile="$HOME/.zshrc" ;;
+    ksh ) profile="$HOME/.profile" ;;
+    fish ) profile="$HOME/.config/fish/config.fish" ;;
     * ) echo "please set your profile !!!"; exit 1 ;;
 esac
 
@@ -40,6 +40,19 @@ function install_env(){
         echo "export EDITOR=vim" >> $profile
         source $profile
     fi
+}
+
+function install_conf(){
+    mkdir -p ~/.pip ~/.m2
+    cp $basepath/conf/pip/pip.conf ~/.pip
+    cp $basepath/conf/m2/settints.xml ~/.m2
+    if ! grep cnpm $profile &>/dev/null; then
+    echo 'alias cnpm="npm --registry=https://registry.npm.taobao.org \
+          --cache=$HOME/.npm/.cache/cnpm \
+          --disturl=https://npm.taobao.org/dist \
+          --userconfig=$HOME/.cnpmrc"' >> $profile 
+    fi
+
 }
 
 function install_zsh(){
