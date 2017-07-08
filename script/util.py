@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import bson
 import json
 import time
+import datetime
 import logging
 import logging.handlers
 from tornado.log import LogFormatter
@@ -16,19 +18,28 @@ def int2str(int_time):
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int_time))
 
 
+class WatchedFileHandler(logging.handlers.WatchedFileHandler):
+
+    def emit(self, record):
+        if record.levelno == self.level:
+            super(WatchedFileHandler, self).emit(record)
+
+
 class Logger(logging.Logger):
 
     def __init__(self, filename=None, name='root', level='INFO', stream=True):
         level = getattr(logging, level.upper())
         super(Logger, self).__init__(name, level)
+        datefmt = '%Y-%m-%d %H:%M:%S'
+        fmt = '%(color)s[%(levelname)s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s'
         if stream:
             hdlr = logging.StreamHandler()
-            hdlr.setFormatter(LogFormatter())
+            hdlr.setFormatter(LogFormatter(fmt=fmt, datefmt=datefmt))
             self.addHandler(hdlr)
 
         if filename:
             hdlr = logging.handlers.WatchedFileHandler(filename=filename, mode='a', encoding='utf-8')
-            hdlr.setFormatter(LogFormatter(color=False))
+            hdlr.setFormatter(LogFormatter(fmt=fmt, datefmt=datefmt, color=False))
             self.addHandler(hdlr)
 
 
@@ -39,7 +50,7 @@ class JSONDecoder(json.decoder.JSONDecoder):
     '''
 
     def __init__(self, **kwargs):
-        kwargs['object_hook'] = self.__decode_dict
+        kwargs['object_hook'] = self._decode_dict
         super(JSONDecoder, self).__init__(**kwargs)
 
     def _decode_list(self, data):
@@ -50,11 +61,11 @@ class JSONDecoder(json.decoder.JSONDecoder):
             elif isinstance(item, list):
                 item = self._decode_list(item)
             elif isinstance(item, dict):
-                item = self.__decode_dict(item)
+                item = self._decode_dict(item)
             rv.append(item)
         return rv
 
-    def __decode_dict(self, data):
+    def _decode_dict(self, data):
         rv = {}
         for key, value in data.iteritems():
             if isinstance(key, unicode):
@@ -64,7 +75,7 @@ class JSONDecoder(json.decoder.JSONDecoder):
             elif isinstance(value, list):
                 value = self._decode_list(value)
             elif isinstance(value, dict):
-                value = self.__decode_dict(value)
+                value = self._decode_dict(value)
             rv[key] = value
         return rv
 
