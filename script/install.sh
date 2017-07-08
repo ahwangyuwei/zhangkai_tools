@@ -14,11 +14,11 @@ shell="${shell%% *}"
 shell="$(basename "${shell:-$SHELL}")"
 
 case "$shell" in
-    bash ) profile="~/.bashrc" ;;
-    zsh ) profile="~/.zshrc" ;;
-    ksh ) profile="~/.profile" ;;
-    fish ) profile="~/.config/fish/config.fish" ;;
-    * ) echo "please define your profile !!!"; exit 1 ;;
+    bash ) profile="/home/$USER/.bashrc" ;;
+    zsh ) profile="/home/$USER/.zshrc" ;;
+    ksh ) profile="/home/$USER/.profile" ;;
+    fish ) profile="/home/$USER/.config/fish/config.fish" ;;
+    * ) echo "please set your profile !!!"; exit 1 ;;
 esac
 
 function install_env(){
@@ -187,6 +187,9 @@ function install_pyenv(){
         CFLAGS="-I $optpath/include" LDFLAGS="-L $optpath/lib" pyenv install 2.7.13
         pyenv global 2.7.13
         pyenv virtualenv 2.7.13 py2
+        return 0
+    else
+        return 1
     fi
 }
 
