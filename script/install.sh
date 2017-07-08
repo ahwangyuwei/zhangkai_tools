@@ -45,7 +45,7 @@ function install_env(){
 function install_conf(){
     mkdir -p ~/.pip ~/.m2
     cp $basepath/conf/pip/pip.conf ~/.pip
-    cp $basepath/conf/m2/settints.xml ~/.m2
+    cp $basepath/conf/m2/settings.xml ~/.m2
     if ! grep cnpm $profile &>/dev/null; then
     echo 'alias cnpm="npm --registry=https://registry.npm.taobao.org \
           --cache=$HOME/.npm/.cache/cnpm \
@@ -286,9 +286,9 @@ function init(){
                 cmd="./configure --prefix=$optpath && make -j10 && make install"
             fi
 
-            download_cmd="download \"$url\""
+            download_cmd="download $url"
             if [[ "$binary" == "true" ]]; then
-                download_cmd="$download_cmd -p \"$runpath\""
+                download_cmd="$download_cmd -p $runpath"
             fi
             $download_cmd
 
