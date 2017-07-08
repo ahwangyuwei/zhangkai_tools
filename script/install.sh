@@ -41,6 +41,9 @@ function download(){
         if [[ "$url" =~ ^(http|ftp) ]]; then
             if command -v axel; then
                 axel -n20 $url -o $filename
+                if [ $? -ne 0 ]; then
+                    wget $url --no-check-certificate -O $filename
+                fi
             else
                 wget $url --no-check-certificate -O $filename
             fi
@@ -115,7 +118,7 @@ function install_mac(){
 
     # 安装brew
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    brew install wget axel ctags jq vim mosh htop
+    brew install wget axel ctags jq vim mosh htop httpie autojump
 
     # 安装zsh
     install_zsh
