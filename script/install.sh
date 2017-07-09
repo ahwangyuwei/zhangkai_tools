@@ -57,7 +57,6 @@ function download(){
                     echo "unknown file format"
                     return 1
                 fi
-
                 new_files=`ls`
                 dirname=`echo -e "$new_files\n$files" | sort | uniq -u`
             fi
@@ -115,14 +114,23 @@ function install_zsh(){
 function install_mac(){
     # 安装Xcode Command Line Tools
     xcode-select --install
-
-    # 安装brew
-    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    brew install wget axel ctags jq vim mosh htop httpie autojump
-
     # 安装zsh
     install_zsh
-    brew install zsh-syntax-highlighting
+    install_conf
+
+    # 安装homebrew
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    #替换brew.git:
+    cd "$(brew --repo)"
+    git remote set-url origin https://mirrors.ustc.edu.cn/brew.git
+    #替换homebrew-core.git:
+    cd "$(brew --repo)/Library/Taps/homebrew/homebrew-core"
+    git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-core.git
+    #替换bottles
+    echo 'export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' >> $profile
+    source $profile
+
+    brew install wget axel ctags jq vim mosh htop httpie autojump zsh-syntax-highlighting
     echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> $profile
 
     cd $basepath/tmp
@@ -150,7 +158,7 @@ export PATH=\$JAVA_HOME/bin:\$JRE_HOME/bin:\$PATH" >> $profile
 
 function install_hadoop(){
     download http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-2.8.0/hadoop-2.8.0.tar.gz -p $runpath
-    
+
     if ! grep HADOOP_HOME $profile &>/dev/null; then
         echo "
 export HADOOP_HOME=`pwd` >> $profile
