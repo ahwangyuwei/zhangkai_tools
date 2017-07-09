@@ -128,7 +128,7 @@ function install_mac(){
     git remote set-url origin https://mirrors.ustc.edu.cn/homebrew-core.git
     #替换bottles
     echo 'export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' >> ~/.zshrc
-    source $profile
+    source ~/.zshrc
 
     brew install wget axel ctags jq vim mosh htop httpie autojump zsh-syntax-highlighting
     echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc
