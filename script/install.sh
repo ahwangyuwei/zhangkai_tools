@@ -22,6 +22,7 @@ case "$shell" in
 esac
 
 function download(){
+    cd $basepath/tmp
     url=$1
     filename=`basename "$url"`
     dirname=${filename%.*}
@@ -135,12 +136,11 @@ function install_mac(){
 
     cd $basepath/tmp
 
-    download https://iterm2.com/downloads/stable/latest -p /Applications
-    download https://atom.io/download/mac -p /Applications
+    download https://iterm2.com/downloads/stable/latest -f iterm2.zip -p /Applications
+    download https://atom.io/download/mac -f atom.zip -p /Applications
 
-    axel -n20 http://zipzapmac.com/download/Go2Shell
-    axel -n20 https://www.charlesproxy.com/assets/release/4.1.3/charles-proxy-4.1.3.dmg
-
+    axel -n20 http://zipzapmac.com/DMGs/Go2Shell.dmg
+    open Go2Shell.dmg
 }
 
 function install_jdk(){
@@ -339,7 +339,6 @@ function init(){
     sections=`getsections $config`
     for package in $packages
     do
-        cd $basepath/tmp
         if command -v install_$package &>/dev/null; then
             cmd=install_$package
         elif [[ "$sections" =~ $package ]]; then
@@ -387,4 +386,3 @@ function init(){
 }
 
 init $@
-
