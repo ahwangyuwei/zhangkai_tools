@@ -7,6 +7,8 @@ cd $basepath
 mkdir -p opt tmp runtime
 optpath=$(cd opt; pwd)
 runpath=$(cd runtime; pwd)
+config=$basepath/script/config.ini
+mkdir -p $basepath/script/logs
 
 shell="$(ps c -p "$PPID" -o 'ucomm=' 2>/dev/null || true)"
 shell="${shell##-}"
@@ -294,7 +296,6 @@ function install_supervisor(){
 function install_download(){
     mkdir -p $basepath/upload/data
     download_path="${basepath//\//\/}\/upload\/data"
-    cp $basepath/conf/nginx.conf $optpath/conf/nginx.conf
     sed -i "s/download_path/$download_path/g" $optpath/conf/nginx.conf
     ps -ef | grep $USER | grep -v grep | grep nginx | awk '{print $2}' | xargs kill -9
     $optpath/sbin/nginx -c $optpath/conf/nginx.conf
@@ -328,10 +329,67 @@ function readini(){
     fi
 }
 
+function install(){
+    package=$1
+    if command -v install_$package &>/dev/null; then
+        cmd=install_$package
+    elif [[ "$sections" =~ $package ]]; then
+        depends=`readini $package depends $config`
+        if [[ "$depends" != "" ]]; then
+            for depend in $depends
+            do
+                install $depend
+            done
+            # 重新读取变量
+            package=$1
+        fi
+
+        url=`readini $package url $config`
+        cmd=`readini $package command $config`
+        binary=`readini $package binary $config`
+
+        if [[ "$cmd" == "" ]]; then
+            cmd="./configure --prefix=$optpath && make -j10 && make install"
+        fi
+
+        download_cmd="download $url"
+        if [[ "$binary" == "true" ]]; then
+            download_cmd="$download_cmd -p $runpath"
+        fi
+        $download_cmd
+
+        if [[ "$binary" == "true" ]]; then
+            continue
+        fi
+    else
+        echo "$package configure is not found !!!"
+        return 1
+    fi
+
+    set -o pipefail; eval "$cmd" | tee -a $basepath/script/logs/${package}.log
+
+    if [[ $? -eq 0 ]]; then
+        echo "$package install succeed" >> $basepath/script/result.log
+        if [[ "$package" == "python" ]]; then
+            if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
+                pip install --upgrade -r $basepath/script/requirements.txt
+                if [[ $? -eq 0 ]]; then
+                    install_upload
+                    show_info
+                fi
+                echo "pip install succeed" >> $basepath/script/result.log
+            else
+                echo "pip install failed" >> $basepath/script/result.log
+            fi
+        fi
+    else
+        echo "$package install failed" >> $basepath/script/result.log
+    fi
+
+}
+
 function init(){
     install_env
-    mkdir -p $basepath/script/logs
-    config=$basepath/script/config.ini
     if [ $# -eq 0 ]; then
         packages=`readini common packages $config`
     else
@@ -340,49 +398,7 @@ function init(){
     sections=`getsections $config`
     for package in $packages
     do
-        if command -v install_$package &>/dev/null; then
-            cmd=install_$package
-        elif [[ "$sections" =~ $package ]]; then
-            url=`readini $package url $config`
-            cmd=`readini $package command $config`
-            binary=`readini $package binary $config`
-
-            if [[ "$cmd" == "" ]]; then
-                cmd="./configure --prefix=$optpath && make -j10 && make install"
-            fi
-
-            download_cmd="download $url"
-            if [[ "$binary" == "true" ]]; then
-                download_cmd="$download_cmd -p $runpath"
-            fi
-            $download_cmd
-
-            if [[ "$binary" == "true" ]]; then
-                continue
-            fi
-        else
-            echo "$package configure is not found !!!"
-            continue
-        fi
-        set -o pipefail; eval "$cmd" | tee -a $basepath/script/logs/${package}.log
-
-        if [[ $? -eq 0 ]]; then
-            echo "$package install succeed" >> $basepath/script/result.log
-            if [[ "$package" == "python" ]]; then
-                if grep "Successfully installed pip" $basepath/script/logs/${package}.log &>/dev/null ; then
-                    pip install --upgrade -r $basepath/script/requirements.txt
-                    if [[ $? -eq 0 ]]; then
-                        install_upload
-                        show_info
-                    fi
-                    echo "pip install succeed" >> $basepath/script/result.log
-                else
-                    echo "pip install failed" >> $basepath/script/result.log
-                fi
-            fi
-        else
-            echo "$package install failed" >> $basepath/script/result.log
-        fi
+        install $package
     done
 }
 
