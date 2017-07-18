@@ -296,9 +296,9 @@ function install_supervisor(){
 function install_download(){
     mkdir -p $basepath/upload/data
     download_path="${basepath//\//\/}\/upload\/data"
-    sed -i "s/download_path/$download_path/g" $optpath/conf/nginx.conf
+    sed -i "s/download_path/$download_path/g" $optpath/nginx/conf/nginx.conf
     ps -ef | grep $USER | grep -v grep | grep nginx | awk '{print $2}' | xargs kill -9
-    $optpath/sbin/nginx -c $optpath/conf/nginx.conf
+    $optpath/sbin/nginx -c $optpath/nginx/conf/nginx.conf
 }
 
 function install_upload(){
