@@ -109,7 +109,7 @@ function install_conf(){
 
 function install_zsh(){
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-    sed -i s'/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/g' ~/.zshrc
+    sed -i 's/ZSH_THEME="robbyrussell"/ZSH_THEME="ys"/g' ~/.zshrc
 }
 
 function install_mac(){
@@ -131,7 +131,8 @@ function install_mac(){
     echo 'export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles' >> ~/.zshrc
     source ~/.zshrc
 
-    brew install wget axel ctags jq vim mosh htop httpie autojump zsh-syntax-highlighting
+    brew install wget axel ctags jq vim mosh htop httpie autojump zsh-syntax-highlighting git coreutuls
+    echo "export PATH=$(brew --prefix coreutils)/libexec/gnubin:$PATH" >> ~/.zshrc
     echo "source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc
 
     cd $basepath/tmp
@@ -346,7 +347,7 @@ function init(){
             cmd=`readini $package command $config`
             binary=`readini $package binary $config`
 
-            if [[ "$command" == "" ]]; then
+            if [[ "$cmd" == "" ]]; then
                 cmd="./configure --prefix=$optpath && make -j10 && make install"
             fi
 
