@@ -352,14 +352,11 @@ function install(){
             cmd="./configure --prefix=$optpath && make -j10 && make install"
         fi
 
-        download_cmd="download $url"
         if [[ "$binary" == "true" ]]; then
-            download_cmd="$download_cmd -p $runpath"
-        fi
-        $download_cmd
-
-        if [[ "$binary" == "true" ]]; then
-            continue
+            download "$url" -p $runpath
+            return 0
+        else
+            download "$url"
         fi
     else
         echo "$package configure is not found !!!"
@@ -385,7 +382,6 @@ function install(){
     else
         echo "$package install failed" >> $basepath/script/result.log
     fi
-
 }
 
 function init(){
